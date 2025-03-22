@@ -1,26 +1,34 @@
 import pygame
 
-class Button():
-	def __init__(self, x, y, image, scale):
-		width = image.get_width()
-		height = image.get_height()
-		self.image = pygame.transform.scale(image, (int(width * scale), int(height * scale)))
-		self.rect = self.image.get_rect()
-		self.rect.topleft = (x, y)
-		self.clicked = False
+class Button:
+    def __init__(self, x, y, width, height, text, font, color, hover_color, text_color):
+        self.rect = pygame.Rect(x, y, width, height)
+        self.text = text
+        self.font = font
+        self.color = color
+        self.hover_color = hover_color
+        self.text_color = text_color
+        self.clicked = False
 
-	def draw(self, surface):
-		action = False
-		pos = pygame.mouse.get_pos()
+    def draw(self, surface):
+        action = False
+        pos = pygame.mouse.get_pos()
 
-		if self.rect.collidepoint(pos):
-			if pygame.mouse.get_pressed()[0] == 1 and self.clicked == False:
-				self.clicked = True
-				action = True
+        # Change color on hover
+        if self.rect.collidepoint(pos):
+            pygame.draw.rect(surface, self.hover_color, self.rect)
+            if pygame.mouse.get_pressed()[0] == 1 and not self.clicked:
+                self.clicked = True
+                action = True
+        else:
+            pygame.draw.rect(surface, self.color, self.rect)
 
-		if pygame.mouse.get_pressed()[0] == 0:
-			self.clicked = False
+        if pygame.mouse.get_pressed()[0] == 0:
+            self.clicked = False
 
-		surface.blit(self.image, (self.rect.x, self.rect.y))
+        # Draw the text
+        text_surface = self.font.render(self.text, True, self.text_color)
+        text_rect = text_surface.get_rect(center=self.rect.center)
+        surface.blit(text_surface, text_rect)
 
-		return action
+        return action

@@ -1,6 +1,7 @@
 import pygame
 import button
 import csv
+import os  # Import os to handle file paths
 
 pygame.init()
 SCREEN_WIDTH = 800
@@ -87,6 +88,9 @@ for i in range(len(img_list)):
         button_col = 0
         button_row += 1
 
+# Ensure the LVLS folder exists
+if not os.path.exists("LVLS"):
+    os.makedirs("LVLS")
 
 run = True
 while run:
@@ -95,21 +99,27 @@ while run:
     draw_world()
     draw_text(f'Level:{level}', font, WHITE, 50, SCREEN_HEIGHT + LOWER_MARGIN - 90)
     draw_text('Press UP or DOWN to change level', font, WHITE, 50, SCREEN_HEIGHT + LOWER_MARGIN - 50)
+    # Save level data
     if save_button.draw(screen):
-        #save level data
-        with open(f'level{level}_data.csv', 'w', newline = '') as csvfile:
-            writer = csv.writer(csvfile, delimiter = ',')
+        with open(f'LVLS/level{level}_data.csv', 'w', newline='') as csvfile:
+            writer = csv.writer(csvfile, delimiter=',')
             for row in world_data:
                 writer.writerow(row)
+        print(f"Level {level} saved to LVLS/level{level}_data.csv")
+
+    # Load level data
     if load_button.draw(screen):
-        #load level data
-        #reset scroll back to the start of the level
+        # Reset scroll back to the start of the level
         scroll = 0
-        with open(f'level{level}_data.csv', newline = '') as csvfile:
-            reader = csv.reader(csvfile, delimiter = ',')
-            for x, row in enumerate(reader):
-                for y, tile in enumerate(row):
-                    world_data[x][y] = int(tile)
+        try:
+            with open(f'LVLS/level{level}_data.csv', newline='') as csvfile:
+                reader = csv.reader(csvfile, delimiter=',')
+                for x, row in enumerate(reader):
+                    for y, tile in enumerate(row):
+                        world_data[x][y] = int(tile)
+            print(f"Level {level} loaded from LVLS/level{level}_data.csv")
+        except FileNotFoundError:
+            print(f"Error: Level {level} does not exist in the LVLS folder.")
     #draw tile panel and tiles
     pygame.draw.rect(screen, GREEN, (SCREEN_WIDTH, 0, SIDE_MARGIN, SCREEN_HEIGHT))
     #choose tile
