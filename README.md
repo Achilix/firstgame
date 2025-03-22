@@ -1,7 +1,7 @@
 # Pygame Game: Zombie Survival
 
 ## Description
-A simple Pygame-based game where the player must survive against zombies while navigating the environment. The goal is to survive as long as possible while managing limited resources and avoiding enemies.
+A Pygame-based game where the player must survive against zombies while navigating the environment. The game includes player movement, enemy AI, health mechanics, and basic interactions. The goal is to survive as long as possible while managing limited resources and avoiding enemies.
 
 ---
 
@@ -37,7 +37,6 @@ A simple Pygame-based game where the player must survive against zombies while n
 ### Advanced Enemy Behavior
 - **Enemy Types**: Add different types of enemies with unique behaviors.
 - **Vertical Movement**: Allow enemies to jump or climb platforms.
-- **Boss Enemies**: Introduce boss enemies with special abilities.
 
 ### Scoring System
 - **Score Display**: Show the player's score on the screen.
@@ -58,18 +57,6 @@ A simple Pygame-based game where the player must survive against zombies while n
 - **Animations**: Add animations for the player, enemies, and attacks.
 - **Sound Effects**: Add sound effects for movement, attacks, and collisions.
 - **Background Music**: Include background music for a more immersive experience.
-
-### Additional Features
-- **Power-Ups**:
-  - Add power-ups such as health packs, speed boosts, or temporary invincibility.
-- **Multiplayer Mode**:
-  - Add a local multiplayer mode where two players can compete or cooperate.
-- **Pause Menu**:
-  - Add a pause menu with options to resume, restart, or quit the game.
-- **Game Timer**:
-  - Add a timer to track how long the player survives.
-- **Achievements**:
-  - Add achievements for completing specific tasks (e.g., surviving for 5 minutes, defeating 10 enemies).
 
 ---
 
