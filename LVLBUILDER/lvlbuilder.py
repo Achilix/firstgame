@@ -74,8 +74,10 @@ def draw_world():
                 screen.blit(img_list[tile], (x * TILE_SIZE - scroll, y * TILE_SIZE))
 
 #create buttons
+# Create buttons using images
 save_button = button.Button(SCREEN_WIDTH // 2, SCREEN_HEIGHT + LOWER_MARGIN - 50, save_img, 1)
-load_button = button.Button(SCREEN_WIDTH // 2 + 100, SCREEN_HEIGHT + LOWER_MARGIN - 50, load_img, 1)
+load_button = button.Button(SCREEN_WIDTH // 2 + 200, SCREEN_HEIGHT + LOWER_MARGIN - 50, load_img, 1)
+
 #make button list 
 button_list = []
 button_col = 0
