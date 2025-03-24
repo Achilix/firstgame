@@ -66,11 +66,12 @@ while running:
     if player.health > 0:
         # Get key presses
         keys = pygame.key.get_pressed()
+        mouse_buttons = pygame.mouse.get_pressed()  # Get mouse button states
 
         # Update player
-        player.handle_movement(keys)
+        player.handle_input(keys, mouse_buttons)  # Pass mouse buttons for shooting
         player.apply_gravity(platforms)
-        player.update()  # Update player state (e.g., invincibility)
+        player.update()  # Update player state and animations
 
         # Update enemy
         enemy.move_toward_player(player)  # Enemy chases the player
@@ -81,10 +82,22 @@ while running:
             knockback_direction = 1 if player.rect.centerx < enemy.rect.centerx else -1
             player.take_damage(10, knockback_direction, enemy.rect)  # Pass only the required arguments
 
+        # Update bullets
+        for bullet in player.bullets[:]:
+            bullet.update()
+            bullet.draw(screen)
+            # Remove bullets that go off-screen
+            if bullet.rect.right < 0 or bullet.rect.left > SCREEN_WIDTH:
+                player.bullets.remove(bullet)
+
         # Draw everything
+        screen.fill(WHITE)  # Clear the screen
         pygame.draw.rect(screen, BLACK, platform)  # Draw the ground platform
         player.draw(screen)
         enemy.draw(screen)
+
+        # Update the display
+        pygame.display.flip()
     else:
         # Draw the restart button
         if restart_button.draw(screen):
@@ -92,9 +105,6 @@ while running:
             player.rect.topleft = (100, 500)
             enemy.rect.topleft = (400, 500)
             print("Game restarted!")
-
-    # Update the display
-    pygame.display.flip()
 
     # Cap the frame rate
     clock.tick(60)

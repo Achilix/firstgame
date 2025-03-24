@@ -1,10 +1,21 @@
 import pygame
 import random
-
+from Bullet import Bullet
 class Player:
     def __init__(self, x, y, player_sprite, screen_width):
-        self.image = player_sprite
-        self.rect = self.image.get_rect(topleft=(x, y))
+        self.sprite_sheet_run = pygame.image.load('SPRITES/Run.png').convert_alpha()  # Running sprite sheet
+        self.sprite_sheet_idle = pygame.image.load('SPRITES/Idle.png').convert_alpha()  # Idle sprite sheet
+        self.sprite_sheet_fire = pygame.image.load('SPRITES/Shot_1.png').convert_alpha()  # Firing sprite sheet
+
+        self.frames_run = self.load_frames(self.sprite_sheet_run, num_frames=8)  # 8 frames for running
+        self.frames_idle = self.load_frames(self.sprite_sheet_idle, num_frames=7)  # 7 frames for idle
+        self.frames_fire = self.load_frames(self.sprite_sheet_fire, num_frames=4)  # 4 frames for firing
+
+        self.current_frame = 0
+        self.animation_speed = 0.2  # Adjust animation speed
+        self.image = self.frames_idle[self.current_frame]  # Start with idle animation
+        self.rect = self.image.get_rect(topleft=(x, y))  # Use the default rect for the player
+
         self.speed = 5
         self.velocity_y = 0
         self.gravity = 0.5
@@ -13,33 +24,98 @@ class Player:
         self.flipped = False
         self.screen_width = screen_width  # Store screen width for boundary checks
         self.health = 100  # Player's health (out of 100)
-        self.knockback_force = 5  # Knockback distance per frame
-        self.knockback_frames = 10  # Number of frames for knockback animation
-        self.knockback_direction = 0  # Direction of knockback (-1 for left, 1 for right)
-        self.knockback_timer = 0  # Timer for knockback animation
-        self.knockback_source = None  # Store the zombie's rectangle causing the knockback
-        self.invincible = False  # Whether the player is invincible
-        self.invincibility_timer = 0  # Timer for invincibility
-        self.gun = None  # Placeholder for the gun object
+        self.is_moving = False  # Track whether the player is moving
+        self.is_firing = False  # Track whether the player is firing
+        self.bullets = []  # List to store bullets
+
+    def load_frames(self, sprite_sheet, num_frames):
+        """
+        Split the sprite sheet into individual frames.
+        :param sprite_sheet: The loaded sprite sheet.
+        :param num_frames: The total number of frames in the sprite sheet.
+        :return: A list of frames.
+        """
+        frames = []
+        frame_width = sprite_sheet.get_width() // num_frames  # Calculate the width of each frame
+        frame_height = sprite_sheet.get_height()  # Use the full height of the sprite sheet
+
+        for i in range(num_frames):
+            # Extract each frame
+            frame = sprite_sheet.subsurface(pygame.Rect(
+                i * frame_width,  # Start at the correct x-coordinate for each frame
+                0,  # Start at the top of the sprite sheet
+                frame_width,  # Width of the frame
+                frame_height  # Height of the frame
+            ))
+            frames.append(frame)
+
+        return frames
+
+    def animate(self):
+        """
+        Handle the player's animation based on their state.
+        """
+        if self.is_firing:
+            # Use shooting animation frames
+            self.current_frame += self.animation_speed
+            if self.current_frame >= len(self.frames_fire):
+                self.current_frame = 0
+                self.is_firing = False  # Reset firing state after animation
+            self.image = self.frames_fire[int(self.current_frame)]
+        elif self.is_moving:
+            # Use running animation frames
+            self.current_frame += self.animation_speed
+            if self.current_frame >= len(self.frames_run):
+                self.current_frame = 0
+            self.image = self.frames_run[int(self.current_frame)]
+        else:
+            # Use idle animation frames
+            self.current_frame += self.animation_speed
+            if self.current_frame >= len(self.frames_idle):
+                self.current_frame = 0
+            self.image = self.frames_idle[int(self.current_frame)]
+
+        # Flip the image if the player is facing left
+        if self.flipped:
+            self.image = pygame.transform.flip(self.image, True, False)
+
+    def handle_input(self, keys, mouse_buttons):
+        """
+        Handle both keyboard and mouse input.
+        :param keys: The pressed keys.
+        :param mouse_buttons: The pressed mouse buttons.
+        """
+        self.handle_movement(keys)
+
+        # Check for mouse button press (left mouse button)
+        if mouse_buttons[0]:  # Left mouse button
+            self.shoot()
 
     def handle_movement(self, keys):
+        self.is_moving = False  # Assume the player is idle by default
+
         if keys[pygame.K_LEFT]:
             self.rect.x -= self.speed
             if self.rect.left < 0:
                 self.rect.left = 0
             if not self.flipped:
-                self.image = pygame.transform.flip(self.image, True, False)
                 self.flipped = True
+            self.is_moving = True  # Player is moving
+
         if keys[pygame.K_RIGHT]:
             self.rect.x += self.speed
             if self.rect.right > self.screen_width:
                 self.rect.right = self.screen_width
             if self.flipped:
-                self.image = pygame.transform.flip(self.image, True, False)
                 self.flipped = False
+            self.is_moving = True  # Player is moving
+
         if keys[pygame.K_UP] and not self.jumping:
             self.jumping = True
             self.velocity_y = -self.jump_height
+
+        # Animate based on movement state
+        self.animate()
 
     def apply_gravity(self, platforms):
         self.velocity_y += self.gravity
@@ -60,78 +136,53 @@ class Player:
         :param knockback_direction: -1 for left, 1 for right.
         :param zombie_rect: The rectangle of the zombie causing the knockback.
         """
-        if not self.invincible:  # Only take damage if not invincible
+        if self.rect.colliderect(zombie_rect):  # Use the default rect for collision
             self.health -= amount
             if self.health <= 0:
                 self.health = 0
                 print("Player is dead!")
-            else:
-                self.knockback_direction = knockback_direction
-                self.knockback_timer = self.knockback_frames  # Start knockback animation
-                self.knockback_source = zombie_rect  # Store the zombie's rectangle
-                self.invincible = True  # Make the player invincible
-                self.invincibility_timer = 60  # Set invincibility duration (e.g., 1 second at 60 FPS)
 
-    def knockback(self):
+    def shoot(self):
         """
-        Apply knockback to the player over multiple frames, ensuring it moves away from the zombie.
+        Shoot a bullet from the muzzle every first frame of the shooting animation.
         """
-        if self.knockback_timer > 0 and self.knockback_source:
-            # Determine the knockback direction based on the zombie's position
-            if self.rect.centerx < self.knockback_source.centerx:
-                self.knockback_direction = -1  # Move left if the player is to the left of the zombie
-            else:
-                self.knockback_direction = 1  # Move right if the player is to the right of the zombie
-
-            # Apply knockback gradually
-            self.rect.x += self.knockback_force * self.knockback_direction
-            self.knockback_timer -= 1
-
-            # Ensure the player doesn't go out of bounds
-            if self.rect.left < 0:
-                self.rect.left = 0
-            if self.rect.right > self.screen_width:
-                self.rect.right = self.screen_width
+        if self.current_frame == 0:  # Fire only on the first frame of the shooting animation
+            direction = -1 if self.flipped else 1  # -1 for left, 1 for right
+            bullet_x = self.rect.centerx + (direction * 20)  # Offset bullet position horizontally
+            bullet_y = self.rect.top + 91  # Muzzle position (91 pixels from the top)
+            self.bullets.append(Bullet(bullet_x, bullet_y, direction))
+            self.is_firing = True  # Trigger the firing animation
 
     def update(self):
         """
-        Update the player's state (e.g., invincibility timer, knockback animation).
+        Update the player's state (e.g., animation, bullets).
         """
-        if self.invincible:
-            self.invincibility_timer -= 1
-            if self.invincibility_timer <= 0:
-                self.invincible = False  # End invincibility
+        self.animate()
+        self.update_bullets()
 
-        # Handle knockback animation
-        self.knockback()
-
-        # Update gun position
-        if self.gun:
-            self.gun.update_position(self.rect, self.flipped)
-            self.gun.update_bullets()
+    def update_bullets(self):
+        for bullet in self.bullets[:]:
+            bullet.update()
+            if bullet.rect.right < 0 or bullet.rect.left > self.screen_width:
+                self.bullets.remove(bullet)  # Remove bullets off-screen
 
     def draw(self, screen):
-        # Draw the player sprite
         screen.blit(self.image, self.rect.topleft)
+        for bullet in self.bullets:
+            bullet.draw(screen)
+        self.draw_health_bar(screen)
 
-        # Draw the health bar
-        # Red background (full health bar)
-        pygame.draw.rect(screen, (255, 0, 0), (self.rect.x, self.rect.y - 10, self.rect.width, 5))
-        # Green foreground (current health)
-        pygame.draw.rect(screen, (0, 255, 0), (self.rect.x, self.rect.y - 10, self.rect.width * (self.health / 100), 5))
-
-    def grabcoin(self, coin, score):
-        if self.rect.colliderect(coin.rect):
-            score.update()
-            print("Coin collected")
-            coin.rect.x = random.randint(0, self.screen_width - coin.rect.width)
-            coin.rect.y = random.randint(0, 500)  # Adjust Y position as needed
-            return True
-        return False
-
-    def equip_gun(self, gun):
+    def draw_health_bar(self, screen):
         """
-        Equip a gun to the player.
-        :param gun: The gun object to equip.
+        Draw the player's health bar above their head.
         """
-        self.gun = gun
+        bar_width = 50
+        bar_height = 5
+        bar_x = self.rect.centerx - bar_width // 2
+        bar_y = self.rect.top - 10
+        health_ratio = self.health / 100
+
+        # Draw the background bar (gray)
+        pygame.draw.rect(screen, (100, 100, 100), (bar_x, bar_y, bar_width, bar_height))
+        # Draw the health bar (green)
+        pygame.draw.rect(screen, (0, 255, 0), (bar_x, bar_y, bar_width * health_ratio, bar_height))
