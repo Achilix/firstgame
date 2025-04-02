@@ -4,6 +4,7 @@ from Characters.Enemy import Enemy
 from button import Button
 from Ammo import Ammo
 from Bandage import Bandage
+
 # Initialize Pygame
 pygame.init()
 
@@ -21,18 +22,12 @@ BLACK = (0, 0, 0)
 clock = pygame.time.Clock()
 
 # Load assets
-player_sprite = pygame.image.load('assets/13.png').convert_alpha()  # Load player sprite
-enemy_sprite = pygame.image.load('assets/14.png').convert_alpha()  # Load zombie sprite
 ammo_image_path = 'assets/10.png'  # Replace with the correct path to your ammo image
-bandage_image_path = 'assets/12.png'  # Replace with the correct path to your bandage image
-
-# Resize sprites (optional, if needed)
-player_sprite = pygame.transform.scale(player_sprite, (50, 50))
-enemy_sprite = pygame.transform.scale(enemy_sprite, (50, 50))
+bandage_image_path = 'assets/11.png'  # Replace with the correct path to your bandage image
 
 # Create player and enemy objects
-player = Player(x=100, y=500, player_sprite=player_sprite, screen_width=SCREEN_WIDTH)
-enemy = Enemy(x=400, y=500, width=50, height=50, enemy_sprite=enemy_sprite)
+player = Player(x=100, y=500, player_sprite=None, screen_width=SCREEN_WIDTH)  # No static sprite
+enemy = Enemy(x=400, y=500, width=50, height=50, enemy_sprite=None)  # No static sprite
 
 # Create an ammo object
 ammo = Ammo(x=300, y=520, image_path=ammo_image_path)
@@ -135,7 +130,7 @@ while running:
                 player.rect.topleft = (100, 500)
                 player.is_dead = False
                 player.death_animation_done = False
-                enemy = Enemy(x=400, y=500, width=50, height=50, enemy_sprite=enemy_sprite)
+                enemy = Enemy(x=400, y=500, width=50, height=50, enemy_sprite=None)  # No static sprite
                 print("Game restarted!")
 
     # Cap the frame rate
@@ -143,9 +138,3 @@ while running:
 
 # Quit Pygame
 pygame.quit()
-
-def take_damage(self, amount):
-    self.health -= amount
-    if self.health <= 0:
-        self.health = 0
-        print("Enemy is dead!")
