@@ -2,9 +2,8 @@ import pygame
 from Characters.player import Player
 from Characters.Enemy import Enemy
 from button import Button
-# from guns import Rifle, Pistol  # Commented out
-# from GunPickup import GunPickup  # Commented out
-
+from Ammo import Ammo
+from Bandage import Bandage
 # Initialize Pygame
 pygame.init()
 
@@ -24,6 +23,8 @@ clock = pygame.time.Clock()
 # Load assets
 player_sprite = pygame.image.load('assets/13.png').convert_alpha()  # Load player sprite
 enemy_sprite = pygame.image.load('assets/14.png').convert_alpha()  # Load zombie sprite
+ammo_image_path = 'assets/10.png'  # Replace with the correct path to your ammo image
+bandage_image_path = 'assets/12.png'  # Replace with the correct path to your bandage image
 
 # Resize sprites (optional, if needed)
 player_sprite = pygame.transform.scale(player_sprite, (50, 50))
@@ -32,6 +33,12 @@ enemy_sprite = pygame.transform.scale(enemy_sprite, (50, 50))
 # Create player and enemy objects
 player = Player(x=100, y=500, player_sprite=player_sprite, screen_width=SCREEN_WIDTH)
 enemy = Enemy(x=400, y=500, width=50, height=50, enemy_sprite=enemy_sprite)
+
+# Create an ammo object
+ammo = Ammo(x=300, y=520, image_path=ammo_image_path)
+
+# Create a bandage object
+bandage = Bandage(x=500, y=520, image_path=bandage_image_path)
 
 # Platforms (for simplicity, just a ground platform)
 platform = pygame.Rect(0, 550, SCREEN_WIDTH, 50)
@@ -64,47 +71,72 @@ while running:
             running = False
 
     if player.health > 0:
-        # Get key presses
+        # Normal game logic
         keys = pygame.key.get_pressed()
-        mouse_buttons = pygame.mouse.get_pressed()  # Get mouse button states
+        mouse_buttons = pygame.mouse.get_pressed()
 
         # Update player
-        player.handle_input(keys, mouse_buttons)  # Pass mouse buttons for shooting
+        player.handle_input(keys, mouse_buttons)
         player.apply_gravity(platforms)
-        player.update()  # Update player state and animations
+        player.update()
 
         # Update enemy
-        enemy.move_toward_player(player)  # Enemy chases the player
+        if enemy is not None:
+            enemy.move_toward_player(player)
 
         # Check for collision between player and enemy
-        if player.rect.colliderect(enemy.rect):
-            print("Player hit by enemy!")
-            knockback_direction = 1 if player.rect.centerx < enemy.rect.centerx else -1
-            player.take_damage(10, knockback_direction, enemy.rect)  # Pass only the required arguments
+        if enemy is not None and player.rect.colliderect(enemy.rect):
+            player.take_damage(10, enemy)
+
+        # Check for bullet collisions with the enemy
+        for bullet in player.bullets[:]:
+            if enemy is not None and enemy.rect.colliderect(bullet.rect):
+                enemy.take_damage(20)
+                player.bullets.remove(bullet)
+
+        # Animate the enemy
+        if enemy is not None and enemy.animate():
+            enemy = None
 
         # Update bullets
         for bullet in player.bullets[:]:
             bullet.update()
             bullet.draw(screen)
-            # Remove bullets that go off-screen
             if bullet.rect.right < 0 or bullet.rect.left > SCREEN_WIDTH:
                 player.bullets.remove(bullet)
 
-        # Draw everything
-        screen.fill(WHITE)  # Clear the screen
-        pygame.draw.rect(screen, BLACK, platform)  # Draw the ground platform
-        player.draw(screen)
-        enemy.draw(screen)
+        # Check for collision with ammo
+        ammo.check_collision(player)
 
-        # Update the display
+        # Check for collision with bandage
+        bandage.check_collision(player)
+
+        # Draw everything
+        screen.fill(WHITE)
+        pygame.draw.rect(screen, BLACK, platform)
+        player.draw(screen)
+        if enemy is not None:
+            enemy.draw(screen)
+        ammo.draw(screen)  # Draw the ammo if it hasn't been collected
+        bandage.draw(screen)  # Draw the bandage
+
         pygame.display.flip()
     else:
-        # Draw the restart button
-        if restart_button.draw(screen):
-            player.health = 100
-            player.rect.topleft = (100, 500)
-            enemy.rect.topleft = (400, 500)
-            print("Game restarted!")
+        # Handle player death
+        if not player.death_animation_done:
+            # Continue updating the player to play the death animation
+            player.update()
+            player.draw(screen)
+            pygame.display.flip()
+        else:
+            # Show restart button or end game logic
+            if restart_button.draw(screen):
+                player.health = 100
+                player.rect.topleft = (100, 500)
+                player.is_dead = False
+                player.death_animation_done = False
+                enemy = Enemy(x=400, y=500, width=50, height=50, enemy_sprite=enemy_sprite)
+                print("Game restarted!")
 
     # Cap the frame rate
     clock.tick(60)

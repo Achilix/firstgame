@@ -3,13 +3,17 @@ import random
 from Bullet import Bullet
 class Player:
     def __init__(self, x, y, player_sprite, screen_width):
-        self.sprite_sheet_run = pygame.image.load('SPRITES/Run.png').convert_alpha()  # Running sprite sheet
-        self.sprite_sheet_idle = pygame.image.load('SPRITES/Idle.png').convert_alpha()  # Idle sprite sheet
-        self.sprite_sheet_fire = pygame.image.load('SPRITES/Shot_1.png').convert_alpha()  # Firing sprite sheet
+        # Load sprite sheets
+        self.sprite_sheet_run = pygame.image.load('SPRITES/PLAYER/Run.png').convert_alpha()  # Running sprite sheet
+        self.sprite_sheet_idle = pygame.image.load('SPRITES/PLAYER/Idle.png').convert_alpha()  # Idle sprite sheet
+        self.sprite_sheet_fire = pygame.image.load('SPRITES/PLAYER/Shot_1.png').convert_alpha()  # Firing sprite sheet
+        self.sprite_sheet_dead = pygame.image.load('SPRITES/PLAYER/Dead.png').convert_alpha()  # Death sprite sheet
 
+        # Load animation frames
         self.frames_run = self.load_frames(self.sprite_sheet_run, num_frames=8)  # 8 frames for running
         self.frames_idle = self.load_frames(self.sprite_sheet_idle, num_frames=7)  # 7 frames for idle
         self.frames_fire = self.load_frames(self.sprite_sheet_fire, num_frames=4)  # 4 frames for firing
+        self.frames_dead = self.load_frames(self.sprite_sheet_dead, num_frames=4)  # 4 frames for death
 
         self.current_frame = 0
         self.animation_speed = 0.2  # Adjust animation speed
@@ -26,7 +30,10 @@ class Player:
         self.health = 100  # Player's health (out of 100)
         self.is_moving = False  # Track whether the player is moving
         self.is_firing = False  # Track whether the player is firing
+        self.is_dead = False  # Track whether the player is dead
+        self.death_animation_done = False  # Track if the death animation is complete
         self.bullets = []  # List to store bullets
+        self.bullet_count = 10  # Initialize with 10 bullets
 
     def load_frames(self, sprite_sheet, num_frames):
         """
@@ -55,7 +62,18 @@ class Player:
         """
         Handle the player's animation based on their state.
         """
-        if self.is_firing:
+        if self.is_dead:
+            # Play death animation
+            if not self.death_animation_done:
+                self.current_frame += self.animation_speed
+                if self.current_frame >= len(self.frames_dead):
+                    self.current_frame = len(self.frames_dead) - 1  # Stop at the last frame
+                    self.death_animation_done = True  # Mark animation as done
+                self.image = self.frames_dead[int(self.current_frame)]
+            else:
+                # Return True to indicate the player is "dead" and animation is complete
+                return True
+        elif self.is_firing:
             # Use shooting animation frames
             self.current_frame += self.animation_speed
             if self.current_frame >= len(self.frames_fire):
@@ -78,6 +96,8 @@ class Player:
         # Flip the image if the player is facing left
         if self.flipped:
             self.image = pygame.transform.flip(self.image, True, False)
+
+        return False  # Return False to indicate the player is still active
 
     def handle_input(self, keys, mouse_buttons):
         """
@@ -129,36 +149,58 @@ class Player:
                     self.velocity_y = 0
                     self.jumping = False
 
-    def take_damage(self, amount, knockback_direction, zombie_rect):
+    def take_damage(self, amount, zombie_rect):
         """
-        Reduce the player's health and apply knockback.
+        Reduce the player's health when hit by an enemy.
         :param amount: The amount of damage to reduce from the player's health.
-        :param knockback_direction: -1 for left, 1 for right.
-        :param zombie_rect: The rectangle of the zombie causing the knockback.
+        :param zombie_rect: The rectangle of the zombie dealing damage.
         """
-        if self.rect.colliderect(zombie_rect):  # Use the default rect for collision
-            self.health -= amount
-            if self.health <= 0:
-                self.health = 0
-                print("Player is dead!")
+        # Check if the zombie is dead before applying damage
+        if hasattr(zombie_rect, 'is_dead') and zombie_rect.is_dead:
+            return  # Do nothing if the zombie is dead
+
+        # Apply damage to the player
+        self.health -= amount
+        if self.health <= 0:
+            self.health = 0
+            self.is_dead = True  # Mark the player as dead
+            self.current_frame = 0  # Reset animation frame for death animation
+            print("Player is dead!")  # Debug: Confirm the player is marked as dead
 
     def shoot(self):
         """
         Shoot a bullet from the muzzle every first frame of the shooting animation.
         """
-        if self.current_frame == 0:  # Fire only on the first frame of the shooting animation
-            direction = -1 if self.flipped else 1  # -1 for left, 1 for right
-            bullet_x = self.rect.centerx + (direction * 20)  # Offset bullet position horizontally
-            bullet_y = self.rect.top + 91  # Muzzle position (91 pixels from the top)
-            self.bullets.append(Bullet(bullet_x, bullet_y, direction))
-            self.is_firing = True  # Trigger the firing animation
+        if self.bullet_count > 0:  # Check if the player has bullets left
+            if self.current_frame == 0:  # Fire only on the first frame of the shooting animation
+                direction = -1 if self.flipped else 1  # -1 for left, 1 for right
+                bullet_x = self.rect.centerx + (direction * 20)  # Offset bullet position horizontally
+                bullet_y = self.rect.top + 91  # Muzzle position (91 pixels from the top)
+                self.bullets.append(Bullet(bullet_x, bullet_y, direction))
+                self.is_firing = True  # Trigger the firing animation
+                self.bullet_count -= 1  # Decrease the bullet count
+                print(f"Bullets left: {self.bullet_count}")  # Debug: Print remaining bullets
+        else:
+            print("Out of bullets!")  # Debug: Notify the player is out of bullets
+
+    def reload(self, amount):
+        """
+        Reload the player's bullets.
+        :param amount: The number of bullets to add.
+        """
+        self.bullet_count += amount
+        print(f"Reloaded! Bullets now: {self.bullet_count}")  # Debug: Print new bullet count
 
     def update(self):
         """
         Update the player's state (e.g., animation, bullets).
         """
-        self.animate()
-        self.update_bullets()
+        if not self.is_dead:  # Only update if the player is alive
+            self.animate()
+            self.update_bullets()
+        else:
+            if self.animate():  # Continue playing the death animation
+                print("Player death animation complete!")  # Debug: Confirm animation is done
 
     def update_bullets(self):
         for bullet in self.bullets[:]:
