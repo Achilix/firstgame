@@ -167,12 +167,24 @@ while run:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             run = False
-        #keyboard presses
+        # Keyboard presses
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_UP:
                 level += 1
+                # Reset scroll back to the start of the level
+                scroll = 0
+                loaded_data = load_level(level)
+                if loaded_data is not None:
+                    world_data = loaded_data
+                    print(f"Level {level} loaded from LVLS/level{level}_data.csv")
             if event.key == pygame.K_DOWN and level > 0:
                 level -= 1
+                # Reset scroll back to the start of the level
+                scroll = 0
+                loaded_data = load_level(level)
+                if loaded_data is not None:
+                    world_data = loaded_data
+                    print(f"Level {level} loaded from LVLS/level{level}_data.csv")
             if event.key == pygame.K_LEFT:
                 scroll_left = True
             if event.key == pygame.K_RIGHT:
@@ -181,7 +193,11 @@ while run:
                 scroll_speed += 1
             if event.key == pygame.K_LSHIFT:
                 scroll_speed -= 1
-    
-           
+
+        if event.type == pygame.KEYUP:
+            if event.key == pygame.K_LEFT:
+                scroll_left = False
+            if event.key == pygame.K_RIGHT:
+                scroll_right = False
 
 pygame.quit()

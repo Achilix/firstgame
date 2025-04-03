@@ -132,16 +132,20 @@ class Player:
                     self.velocity_y = 0
                     self.jumping = False
 
-    def take_damage(self, amount, zombie_rect):
-        if hasattr(zombie_rect, 'is_dead') and zombie_rect.is_dead:
+    def take_damage(self, amount, enemy_rect=None):
+        """
+        Reduce the player's health by the given amount.
+        :param amount: The amount of damage to deal.
+        :param enemy_rect: The rect of the enemy dealing the damage (optional).
+        """
+        if self.is_dead:
             return
-
         self.health -= amount
+        print(f"Player took {amount} damage! Health: {self.health}")  # Debugging print
         if self.health <= 0:
             self.health = 0
             self.is_dead = True
-            self.current_frame = 0 
-            print("Player is dead!")
+            print("Player is dead!")  # Debugging print
 
     def shoot(self):
         if self.bullet_count > 0:

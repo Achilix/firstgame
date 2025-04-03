@@ -16,12 +16,19 @@ class Bullet:
         self.rect.x += self.speed
 
     def check_collision(self, other_mask, other_rect):
+        """
+        Check for pixel-perfect collision between the bullet and another object.
+        :param other_mask: The mask of the other object.
+        :param other_rect: The rect of the other object.
+        :return: True if a collision is detected, False otherwise.
+        """
         # Calculate the offset between the bullet and the other object
         offset_x = other_rect.x - self.rect.x
         offset_y = other_rect.y - self.rect.y
 
         # Debugging: Print offset values
-        print(f"Checking collision with offset: ({offset_x}, {offset_y})")
+        print(f"Bullet position: {self.rect.topleft}, Target position: {other_rect.topleft}")
+        print(f"Offset: ({offset_x}, {offset_y})")
 
         # Check for pixel-perfect collision using masks
         return self.mask.overlap(other_mask, (offset_x, offset_y)) is not None

@@ -6,6 +6,7 @@ from Characters.Enemy import Enemy
 from Ammo import Ammo
 from Bandage import Bandage
 from blocks import Block
+from camera import Camera
 
 # Initialize Pygame
 pygame.init()
@@ -13,7 +14,8 @@ pygame.init()
 # Screen dimensions
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 640
-TILE_SIZE = 40
+ROWS = 16  # Match lvlbuilder.py
+TILE_SIZE = SCREEN_HEIGHT // ROWS
 
 # Colors
 WHITE = (255, 255, 255)
@@ -44,6 +46,11 @@ for i in range(10):  # Images from 0.png to 9.png
 ammo_image_path = 'assets/10.png'
 bandage_image_path = 'assets/11.png'
 
+# Load the background image
+background = pygame.image.load("assets/single_background.png").convert()
+background = pygame.transform.scale(background, (SCREEN_WIDTH + 300, SCREEN_HEIGHT + 100))  # Match lvlbuilder.py
+background_width = background.get_width()
+background_height = background.get_height()
 
 # Load level data from CSV
 def load_level(level_file):
@@ -82,11 +89,25 @@ def draw_level(world_data):
                     screen.blit(tile_images[tile], (tile_x, tile_y))
 
 
+def draw_background(camera, level_width, level_height):
+    width = background.get_width()
+    for x in range(0, level_width, width):
+        for y in range(0, level_height, background_height):
+            screen.blit(background, camera.apply_rect(pygame.Rect(x, y, width, background_height)))
+
+
 # Main game loop
 def main(level_file):
     world_data = load_level(level_file)
     if not world_data:
         return
+
+    # Calculate the level's width and height based on the tile map
+    level_width = len(world_data[0]) * TILE_SIZE
+    level_height = len(world_data) * TILE_SIZE
+
+    # Initialize the camera
+    camera = Camera(level_width, level_height, SCREEN_WIDTH, SCREEN_HEIGHT)
 
     # Initialize objects
     player_start_x, player_start_y = 100, 500  # Default position
@@ -130,6 +151,9 @@ def main(level_file):
         player.apply_gravity(blocks)  # Pass blocks (platforms) to apply_gravity
         player.update()
 
+        # Update the camera to follow the player
+        camera.update(player)
+
         # Check for collisions with blocks
         for block in blocks:
             if block.check_collision(player.mask, player.rect):
@@ -139,6 +163,14 @@ def main(level_file):
                     player.velocity_y = 0
                     player.jumping = False
 
+        # Check for collisions between the player and enemies
+        for enemy in enemies:
+            if player.rect.colliderect(enemy.rect):  # Bounding box collision
+                offset_x = enemy.rect.x - player.rect.x
+                offset_y = enemy.rect.y - player.rect.y
+                if player.mask.overlap(enemy.mask, (offset_x, offset_y)):  # Pixel-perfect collision
+                    player.take_damage(10, enemy.rect)  # Deal 10 damage to the player
+
         # Update enemies
         for enemy in enemies[:]:  # Iterate over a copy of the list to safely remove enemies
             if enemy.is_dead and enemy.death_animation_done:
@@ -147,7 +179,21 @@ def main(level_file):
 
             enemy.move_toward_player(player, blocks)  # Pass blocks for collision detection
             enemy.animate()  # Animate the enemy
-            enemy.draw(screen)  # Draw the enemy
+
+        # Check for collisions between bullets and enemies
+        for bullet in player.bullets[:]:  # Iterate over a copy of the list to safely remove bullets
+            for enemy in enemies:
+                if bullet.check_collision(enemy.mask, enemy.rect):
+                    enemy.take_damage(20)  # Deal damage to the enemy
+                    player.bullets.remove(bullet)  # Remove the bullet
+                    break  # Exit the loop to avoid modifying the list during iteration
+
+        # Check for collisions between bullets and blocks
+        for bullet in player.bullets[:]:  # Iterate over a copy of the list to safely remove bullets
+            for block in blocks:
+                if bullet.check_collision(block.mask, block.rect):
+                    player.bullets.remove(bullet)  # Remove the bullet on collision
+                    break  # Exit the loop to avoid modifying the list during iteration
 
         # Check for collisions with ammo
         for ammo in ammo_items[:]:
@@ -161,22 +207,27 @@ def main(level_file):
             if bandage.collected:
                 bandages.remove(bandage)  # Remove the bandage after it is collected
 
-        # Draw the level
-        draw_level(world_data)
+        # Draw the repeated background
+        draw_background(camera, level_width, level_height)
 
-        # Draw player
-        player.draw(screen) 
+        # Draw the level
+        for block in blocks:
+            screen.blit(block.image, camera.apply(block))
+
+        # Draw enemies
+        for enemy in enemies:
+            screen.blit(enemy.image, camera.apply(enemy))
 
         # Draw ammo
         for ammo in ammo_items:
-            ammo.draw(screen)
+            screen.blit(ammo.image, camera.apply(ammo))
 
         # Draw bandages
         for bandage in bandages:
-            bandage.draw(screen)
+            screen.blit(bandage.image, camera.apply(bandage))
 
-        # Draw blocks
-        blocks.draw(screen)
+        # Draw the player
+        screen.blit(player.image, camera.apply(player))
 
         # Update the display
         pygame.display.flip()
