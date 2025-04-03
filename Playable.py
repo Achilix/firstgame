@@ -29,7 +29,7 @@ clock = pygame.time.Clock()
 
 # Load assets
 tile_images = []
-TILE_TYPES = 11  # Number of tile types
+TILE_TYPES = 14  # Number of tile types
 for i in range(TILE_TYPES):
     img = pygame.image.load(f'assets/{i}.png').convert_alpha()
     img = pygame.transform.scale(img, (TILE_SIZE, TILE_SIZE))
@@ -71,6 +71,10 @@ def load_level(level_file):
 def draw_level(world_data):
     for y, row in enumerate(world_data):
         for x, tile in enumerate(row):
+            # Skip player (12), enemy (13), ammo (10), and bandage (11) tiles
+            if tile in [12, 13, 10, 11]:
+                continue
+
             if 0 <= tile < len(tile_images):  # Ensure the tile index is valid
                 tile_x = x * TILE_SIZE
                 tile_y = y * TILE_SIZE
@@ -98,12 +102,12 @@ def main(level_file):
                 blocks.add(Block(x * TILE_SIZE, y * TILE_SIZE, block_images[tile]))
             elif tile == 12:  # Player start position
                 player_start_x, player_start_y = x * TILE_SIZE, y * TILE_SIZE
-            elif tile == 11:  # Enemy
+            elif tile == 13:  # Enemy start position
                 enemies.append(Enemy(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE, None))
             elif tile == 10:  # Ammo
-                ammo_items.append(Ammo(x * TILE_SIZE, y * TILE_SIZE, ammo_image_path))
-            elif tile == 9:  # Bandage
-                bandages.append(Bandage(x * TILE_SIZE, y * TILE_SIZE, bandage_image_path))
+                ammo_items.append(Ammo(x * TILE_SIZE, y * TILE_SIZE, "assets/10.png"))
+            elif tile == 11:  # Bandage
+                bandages.append(Bandage(x * TILE_SIZE, y * TILE_SIZE, "assets/11.png"))
 
     # Create the player object
     player = Player(x=player_start_x, y=player_start_y, player_sprite=None, screen_width=SCREEN_WIDTH)
@@ -152,53 +156,16 @@ def main(level_file):
                 ammo_items.remove(ammo)
 
         # Check for collisions with bandages
-        for bandage in bandages[:]:
+        for bandage in bandages[:]:  # Iterate over a copy of the list to safely remove bandages
             bandage.check_collision(player)
             if bandage.collected:
-                bandages.remove(bandage)
-
-        # Check for collisions between bullets and enemies
-        for bullet in player.bullets[:]:
-            for enemy in enemies:
-                # Calculate the offset between the bullet and the enemy
-                offset_x = enemy.rect.x - bullet.rect.x
-                offset_y = enemy.rect.y - bullet.rect.y
-
-                # Debugging: Print positions and offsets
-                print(f"Bullet position: {bullet.rect.topleft}, Enemy position: {enemy.rect.topleft}")
-                print(f"Offset: ({offset_x}, {offset_y})")
-
-                # Use mask-based collision detection
-                if bullet.check_collision(enemy.mask, enemy.rect):
-                    print("Bullet hit enemy!")  # Debugging print
-                    enemy.take_damage(20)  # Deal damage to the enemy
-                    player.bullets.remove(bullet)  # Remove the bullet
-                    break  # Exit the loop to avoid modifying the list during iteration
-
-        # Check for collisions between bullets and blocks
-        for bullet in player.bullets[:]:
-            for block in blocks:
-                # Calculate the offset between the bullet and the block
-                offset_x = block.rect.x - bullet.rect.x
-                offset_y = block.rect.y - bullet.rect.y
-
-                # Use mask-based collision detection
-                if bullet.check_collision(block.mask, block.rect):
-                    player.bullets.remove(bullet)  # Remove the bullet on collision
-                    break  # Exit the loop to avoid modifying the list during iteration
-
-        # Visualize bullet and enemy masks
-        for bullet in player.bullets:
-            pygame.draw.rect(screen, (255, 0, 0), bullet.rect, 2)  # Red for bullet hitbox
-
-        for enemy in enemies:
-            pygame.draw.rect(screen, (0, 255, 0), enemy.rect, 2)  # Green for enemy hitbox
+                bandages.remove(bandage)  # Remove the bandage after it is collected
 
         # Draw the level
         draw_level(world_data)
 
         # Draw player
-        player.draw(screen)
+        player.draw(screen) 
 
         # Draw ammo
         for ammo in ammo_items:

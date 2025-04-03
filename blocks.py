@@ -19,5 +19,5 @@ class Block(pygame.sprite.Sprite):
         offset_x = other_rect.x - self.rect.x
         offset_y = other_rect.y - self.rect.y
 
-        # Check for pixel-perfect collision using masks
+        # Use mask-based collision detection
         return self.mask.overlap(other_mask, (offset_x, offset_y)) is not None
