@@ -175,20 +175,41 @@ class Player:
                 self.bullets.remove(bullet)
 
     def draw(self, screen):
+        # Draw the player
         screen.blit(self.image, self.rect.topleft)
+
+        # Draw bullets
         for bullet in self.bullets:
             bullet.draw(screen)
-        # Visualize the mask's bounding rectangle
-        mask_rect = self.mask.get_bounding_rects()
-        for rect in mask_rect:
-            pygame.draw.rect(screen, (255, 0, 0), rect.move(self.rect.topleft), 2)
+
+        # Draw the health bar
+        self.draw_health_bar(screen)
+
+        # Draw the ammo count
+        self.draw_ammo_count(screen)
 
     def draw_health_bar(self, screen):
-        bar_width = 50
-        bar_height = 5
-        bar_x = self.rect.centerx - bar_width // 2
-        bar_y = self.rect.top - 10
+        """
+        Draw the player's health bar above their character.
+        """
+        bar_width = 100  # Width of the health bar
+        bar_height = 10  # Height of the health bar
+        bar_x = self.rect.centerx - bar_width // 2  # Center the bar above the player
+        bar_y = self.rect.top - 20  # Position the bar slightly above the player
+
+        # Calculate the health ratio
         health_ratio = self.health / 100
 
+        # Draw the background of the health bar (gray)
         pygame.draw.rect(screen, (100, 100, 100), (bar_x, bar_y, bar_width, bar_height))
+        # Draw the foreground of the health bar (green)
         pygame.draw.rect(screen, (0, 255, 0), (bar_x, bar_y, bar_width * health_ratio, bar_height))
+
+    def draw_ammo_count(self, screen):
+        """
+        Draw the player's ammo count on the screen.
+        """
+        font = pygame.font.Font(None, 36)  # Use a default font with size 36
+        ammo_text = f"Ammo: {self.bullet_count}"
+        text_surface = font.render(ammo_text, True, (255, 255, 255))  # White text
+        screen.blit(text_surface, (10, 10))  # Display the ammo count at the top-left corner

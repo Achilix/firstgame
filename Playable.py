@@ -1,4 +1,5 @@
 import pygame
+import os
 import csv
 from Characters.player import Player
 from Characters.Enemy import Enemy
@@ -45,15 +46,23 @@ bandage_image_path = 'assets/11.png'
 
 
 # Load level data from CSV
-def load_level(level):
+def load_level(level_file):
     world_data = []
     try:
-        with open(f'LVLS/level{level}_data.csv', newline='') as csvfile:
+        # Construct the full path to the level file
+        level_path = os.path.join("LVLS", level_file)
+        print(f"Attempting to load level file: {level_path}")  # Debugging print
+
+        # Open and read the CSV file
+        with open(level_path, newline='') as csvfile:
             reader = csv.reader(csvfile, delimiter=',')
             for row in reader:
-                world_data.append([int(tile) for tile in row])
+                world_data.append([int(tile) for tile in row if tile.strip()])  # Ensure valid integers
     except FileNotFoundError:
-        print(f"Error: Level {level} does not exist.")
+        print(f"Error: Level file {level_file} does not exist.")
+        return None
+    except ValueError as e:
+        print(f"Error: Invalid data in level file {level_file}: {e}")
         return None
     return world_data
 
@@ -70,9 +79,8 @@ def draw_level(world_data):
 
 
 # Main game loop
-def main():
-    level = 0  # Start with level 0
-    world_data = load_level(level)
+def main(level_file):
+    world_data = load_level(level_file)
     if not world_data:
         return
 
@@ -127,18 +135,15 @@ def main():
                     player.velocity_y = 0
                     player.jumping = False
 
-        # Update blocks
-
         # Update enemies
-        for enemy in enemies:
-            enemy.move_toward_player(player)
-            # Calculate the offset between the player and the enemy
-            offset_x = enemy.rect.x - player.rect.x
-            offset_y = enemy.rect.y - player.rect.y
+        for enemy in enemies[:]:  # Iterate over a copy of the list to safely remove enemies
+            if enemy.is_dead and enemy.death_animation_done:
+                enemies.remove(enemy)  # Remove the enemy after the death animation is complete
+                continue  # Skip further processing for this enemy
 
-            # Use mask-based collision detection
-            if player.mask.overlap(enemy.mask, (offset_x, offset_y)):
-                player.take_damage(10, enemy)
+            enemy.move_toward_player(player, blocks)  # Pass blocks for collision detection
+            enemy.animate()  # Animate the enemy
+            enemy.draw(screen)  # Draw the enemy
 
         # Check for collisions with ammo
         for ammo in ammo_items[:]:
@@ -159,8 +164,13 @@ def main():
                 offset_x = enemy.rect.x - bullet.rect.x
                 offset_y = enemy.rect.y - bullet.rect.y
 
+                # Debugging: Print positions and offsets
+                print(f"Bullet position: {bullet.rect.topleft}, Enemy position: {enemy.rect.topleft}")
+                print(f"Offset: ({offset_x}, {offset_y})")
+
                 # Use mask-based collision detection
                 if bullet.check_collision(enemy.mask, enemy.rect):
+                    print("Bullet hit enemy!")  # Debugging print
                     enemy.take_damage(20)  # Deal damage to the enemy
                     player.bullets.remove(bullet)  # Remove the bullet
                     break  # Exit the loop to avoid modifying the list during iteration
@@ -177,15 +187,18 @@ def main():
                     player.bullets.remove(bullet)  # Remove the bullet on collision
                     break  # Exit the loop to avoid modifying the list during iteration
 
+        # Visualize bullet and enemy masks
+        for bullet in player.bullets:
+            pygame.draw.rect(screen, (255, 0, 0), bullet.rect, 2)  # Red for bullet hitbox
+
+        for enemy in enemies:
+            pygame.draw.rect(screen, (0, 255, 0), enemy.rect, 2)  # Green for enemy hitbox
+
         # Draw the level
         draw_level(world_data)
 
         # Draw player
         player.draw(screen)
-
-        # Draw enemies
-        for enemy in enemies:
-            enemy.draw(screen)
 
         # Draw ammo
         for ammo in ammo_items:
@@ -208,4 +221,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main("level0_data.csv")

@@ -3,7 +3,7 @@ import pygame
 class Bullet:
     def __init__(self, x, y, direction):
         # Create the bullet image
-        self.image = pygame.Surface((5, 5))  # Small black dot (5x5)
+        self.image = pygame.Surface((5, 5), pygame.SRCALPHA)  # Use SRCALPHA for transparency
         self.image.fill((0, 0, 0))  # Black color for the bullet
         self.rect = self.image.get_rect(center=(x, y))
         self.speed = 10 * direction  # Speed depends on direction (-1 for left, 1 for right)
@@ -19,6 +19,9 @@ class Bullet:
         # Calculate the offset between the bullet and the other object
         offset_x = other_rect.x - self.rect.x
         offset_y = other_rect.y - self.rect.y
+
+        # Debugging: Print offset values
+        print(f"Checking collision with offset: ({offset_x}, {offset_y})")
 
         # Check for pixel-perfect collision using masks
         return self.mask.overlap(other_mask, (offset_x, offset_y)) is not None

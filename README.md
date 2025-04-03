@@ -5,20 +5,25 @@ A Pygame-based game where the player must survive against zombies while navigati
 
 ---
 
-## Current Features (Progress: **65% Complete**)
+## Current Features (Progress: **85% Complete**)
 
 ### Player
 - **Movement**: The player can move left, right, and jump.
 - **Health**: The player has health that decreases when colliding with enemies.
 - **Knockback**: The player experiences knockback when hit by an enemy.
-- **Collision Detection**: The player interacts with platforms and enemies.
+- **Collision Detection**: The player interacts with platforms and enemies using **mask-based collision detection**.
 - **Health Bar**: A health bar is displayed above the player.
+- **Shooting**: The player can shoot bullets, which interact with enemies and blocks using **mask-based collision detection**.
 
 ### Enemy
 - **Chasing Behavior**: Enemies move toward the player horizontally.
 - **Health**: Enemies have health and can take damage.
 - **Health Bar**: A health bar is displayed above each enemy.
-- **Damage**: Enemies can be damaged by bullets or other attacks.
+- **Damage**: Enemies can be damaged by bullets or other attacks using **mask-based collision detection**.
+
+### Bullets
+- **Shooting Mechanics**: Bullets are fired by the player and interact with enemies and blocks.
+- **Mask-Based Collision**: Bullets use pixel-perfect collision detection for interactions.
 
 ### Game Mechanics
 - **Restart Button**: A button to restart the game after the player dies.
@@ -26,13 +31,7 @@ A Pygame-based game where the player must survive against zombies while navigati
 
 ---
 
-## Features Still Needed (Remaining: **35%**)
-
-### Guns
-- **Re-enable Guns**: Integrate guns (e.g., Rifle, Pistol) into the game.
-- **Shooting Mechanics**: Add animations and effects for shooting.
-- **Ammo System**: Display ammo count and implement reloading mechanics.
-- **Gun Pickup**: Allow the player to pick up guns from the map.
+## Features Still Needed (Remaining: **15%**)
 
 ### Advanced Enemy Behavior
 - **Enemy Types**: Add different types of enemies with unique behaviors.
@@ -47,11 +46,6 @@ A Pygame-based game where the player must survive against zombies while navigati
   - Spawn more zombies if the player is doing well.
   - Reduce ammo pickups or increase enemy speed as the game progresses.
   - Add stronger enemies or bosses at higher difficulty levels.
-- **Difficulty Scaling**: Gradually increase difficulty over time or based on the player's score.
-
-### Level Design
-- **Dynamic Levels**: Add multiple levels with increasing difficulty.
-- **Save/Load Levels**: Improve the level builder to save and load levels seamlessly.
 
 ### Visual and Audio Enhancements
 - **Animations**: Add animations for the player, enemies, and attacks.
@@ -61,8 +55,8 @@ A Pygame-based game where the player must survive against zombies while navigati
 ---
 
 ## Percentage of Completion
-- **Current Progress**: **65%**
-- **Remaining Tasks**: **35%**
+- **Current Progress**: **85%**
+- **Remaining Tasks**: **15%**
 
 ---
 
@@ -71,6 +65,7 @@ A Pygame-based game where the player must survive against zombies while navigati
 2. Clone this repository.
 3. Run `test.py` to start the game.
 4. Use the arrow keys to move the player and avoid enemies.
+5. Use the mouse to shoot bullets.
 
 ---
 
