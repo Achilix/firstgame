@@ -7,10 +7,17 @@ class Block(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.topleft = (x, y)
 
+        # Create a mask for precise collision detection
+        self.mask = pygame.mask.from_surface(self.image)
+
     def update(self, scroll):
         # Update block position based on scroll
         self.rect.x -= scroll
 
-    def check_collision(self, player_rect):
-        # Check for collision with the player
-        return self.rect.colliderect(player_rect)
+    def check_collision(self, other_mask, other_rect):
+        # Calculate the offset between the block and the other object
+        offset_x = other_rect.x - self.rect.x
+        offset_y = other_rect.y - self.rect.y
+
+        # Check for pixel-perfect collision using masks
+        return self.mask.overlap(other_mask, (offset_x, offset_y)) is not None

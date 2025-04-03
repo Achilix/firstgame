@@ -25,8 +25,15 @@ clock = pygame.time.Clock()
 ammo_image_path = 'assets/10.png'  # Replace with the correct path to your ammo image
 bandage_image_path = 'assets/11.png'  # Replace with the correct path to your bandage image
 
+# Tile size
+TILE_SIZE = 50
+
+# Platforms (for simplicity, just a ground platform)
+platform = pygame.Rect(0, 550, SCREEN_WIDTH, 50)
+platforms = [platform]
+
 # Create player and enemy objects
-player = Player(x=100, y=500, player_sprite=None, screen_width=SCREEN_WIDTH)  # No static sprite
+player = Player(x=100, y=platform.top - TILE_SIZE, player_sprite=None, screen_width=SCREEN_WIDTH)  # Adjusted player position
 enemy = Enemy(x=400, y=500, width=50, height=50, enemy_sprite=None)  # No static sprite
 
 # Create an ammo object
@@ -34,10 +41,6 @@ ammo = Ammo(x=300, y=520, image_path=ammo_image_path)
 
 # Create a bandage object
 bandage = Bandage(x=500, y=520, image_path=bandage_image_path)
-
-# Platforms (for simplicity, just a ground platform)
-platform = pygame.Rect(0, 550, SCREEN_WIDTH, 50)
-platforms = [platform]
 
 # Font for the restart button
 font = pygame.font.SysFont('Arial', 30)

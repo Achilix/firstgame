@@ -19,7 +19,7 @@ scroll_left = False
 scroll_right = False
 scroll = 0
 scroll_speed = 1
-TITLE_TYPES = 15  # Updated to match the available images
+TITLE_TYPES = 14  # Updated to match the available images
 current_tile = 0
 level = 0
 font = pygame.font.SysFont('Futura', 30)
@@ -70,8 +70,10 @@ def draw_grid():
 def draw_world():
     for y, row in enumerate(world_data):
         for x, tile in enumerate(row):
-            if tile >= 0:
+            if 0 <= tile < len(img_list):  # Ensure the tile index is valid
                 screen.blit(img_list[tile], (x * TILE_SIZE - scroll, y * TILE_SIZE))
+            elif tile != -1:  # Debug invalid tile values
+                print(f"Invalid tile value: {tile} at position ({x}, {y})")
 
 #create buttons
 # Create buttons using images
@@ -94,6 +96,19 @@ for i in range(len(img_list)):
 if not os.path.exists("LVLS"):
     os.makedirs("LVLS")
 
+def load_level(level):
+    world_data = []
+    try:
+        with open(f'LVLS/level{level}_data.csv', newline='') as csvfile:
+            reader = csv.reader(csvfile, delimiter=',')
+            for row in reader:
+                # Ensure all tile values are valid
+                world_data.append([tile if 0 <= tile < len(img_list) else -1 for tile in map(int, row)])
+    except FileNotFoundError:
+        print(f"Error: Level {level} does not exist.")
+        return None
+    return world_data
+
 run = True
 while run:
     draw_bg()
@@ -113,15 +128,10 @@ while run:
     if load_button.draw(screen):
         # Reset scroll back to the start of the level
         scroll = 0
-        try:
-            with open(f'LVLS/level{level}_data.csv', newline='') as csvfile:
-                reader = csv.reader(csvfile, delimiter=',')
-                for x, row in enumerate(reader):
-                    for y, tile in enumerate(row):
-                        world_data[x][y] = int(tile)
+        loaded_data = load_level(level)
+        if loaded_data is not None:
+            world_data = loaded_data
             print(f"Level {level} loaded from LVLS/level{level}_data.csv")
-        except FileNotFoundError:
-            print(f"Error: Level {level} does not exist in the LVLS folder.")
     #draw tile panel and tiles
     pygame.draw.rect(screen, GREEN, (SCREEN_WIDTH, 0, SIDE_MARGIN, SCREEN_HEIGHT))
     #choose tile
@@ -147,10 +157,10 @@ while run:
     #check that the coordinates are within the tile area
     if pos[0] < SCREEN_WIDTH and pos[1] < SCREEN_HEIGHT:
         #update tile value
-        if pygame.mouse.get_pressed()[0] == 1:
-            if world_data[y][x] != current_tile:
+        if pygame.mouse.get_pressed()[0] == 1:  # Left click to place a tile
+            if 0 <= current_tile < len(img_list) and world_data[y][x] != current_tile:
                 world_data[y][x] = current_tile
-        if pygame.mouse.get_pressed()[2] == 1: 
+        if pygame.mouse.get_pressed()[2] == 1:  # Right click to remove a tile
             world_data[y][x] = -1
     #reset level   
     pygame.display.update()

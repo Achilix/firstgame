@@ -11,7 +11,7 @@ class Enemy:
         self.frames_dead = self.load_frames(self.sprite_sheet_dead, num_frames=5)  # 5 frames for death animation
 
         self.current_frame = 0
-        self.animation_speed = 0.2  # Adjust animation speed
+        self.animation_speed = 0.1  # Adjust animation speed
         self.image = self.frames_walk[self.current_frame]  # Start with the first walk frame
         self.rect = self.image.get_rect(topleft=(x, y - 50))  # Adjust y position to lift the zombie above the ground
 
@@ -20,6 +20,9 @@ class Enemy:
         self.health = 100  # Zombie's health (out of 100)
         self.is_dead = False  # Track if the enemy is dead
         self.death_animation_done = False  # Track if the death animation is complete
+
+        # Create a mask for precise collision detection
+        self.mask = pygame.mask.from_surface(self.image)
 
     def load_frames(self, sprite_sheet, num_frames):
         """
@@ -47,20 +50,14 @@ class Enemy:
         return frames
 
     def animate(self):
-        """
-        Handle the enemy's animation.
-        """
         if self.is_dead:
             # Play death animation
             if not self.death_animation_done:
                 self.current_frame += self.animation_speed
                 if self.current_frame >= len(self.frames_dead):
-                    self.current_frame = len(self.frames_dead) - 1  # Stop at the last frame
-                    self.death_animation_done = True  # Mark animation as done
+                    self.current_frame = len(self.frames_dead) - 1
+                    self.death_animation_done = True
                 self.image = self.frames_dead[int(self.current_frame)]
-            else:
-                # Return True to indicate the enemy should be deleted
-                return True
         else:
             # Play walk animation
             self.current_frame += self.animation_speed
@@ -68,11 +65,12 @@ class Enemy:
                 self.current_frame = 0
             self.image = self.frames_walk[int(self.current_frame)]
 
-        # Flip the image if the enemy is facing left
+        # Flip the image if necessary
         if self.flipped:
             self.image = pygame.transform.flip(self.image, True, False)
 
-        return False  # Return False to indicate the enemy should not be deleted
+        # Update the mask whenever the image changes
+        self.mask = pygame.mask.from_surface(self.image)
 
     def move_toward_player(self, player):
         """
@@ -119,8 +117,9 @@ class Enemy:
         """
         Draw the enemy and its health bar.
         """
-        # Draw the enemy sprite
-        screen.blit(self.image, self.rect.topleft)
+        screen.blit(self.image, self.rect)
+        # Visualize the enemy's mask bounding rectangle
+        pygame.draw.rect(screen, (0, 255, 0), self.rect, 2)  # Green for the enemy's hitbox
 
         if not self.is_dead:
             # Draw the health bar
