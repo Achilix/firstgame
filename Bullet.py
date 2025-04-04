@@ -26,15 +26,9 @@ class Bullet:
         offset_x = other_rect.x - self.rect.x
         offset_y = other_rect.y - self.rect.y
 
-        # Debugging: Print offset values
-        print(f"Bullet position: {self.rect.topleft}, Target position: {other_rect.topleft}")
-        print(f"Offset: ({offset_x}, {offset_y})")
-
         # Check for pixel-perfect collision using masks
         return self.mask.overlap(other_mask, (offset_x, offset_y)) is not None
 
     def draw(self, screen):
         # Draw the bullet on the screen
         screen.blit(self.image, self.rect)
-        # Visualize the bullet's mask bounding rectangle
-        pygame.draw.rect(screen, (255, 0, 0), self.rect, 2)  # Red for the bullet's hitbox

@@ -52,7 +52,7 @@ def start_menu():
 
         # Render menu title
         title_font = pygame.font.Font(font_path, 30)  # Larger font size for the title
-        title_text = title_font.render("Soldier Vs Zombies", True, BLACK)
+        title_text = title_font.render("Zombie Survival", True, BLACK)
         title_rect = title_text.get_rect(center=(SCREEN_WIDTH // 2, 50))  # Center the title
         screen.blit(title_text, title_rect)
 

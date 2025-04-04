@@ -139,10 +139,8 @@ class Enemy:
         Draw the enemy and its health bar.
         """
         screen.blit(self.image, self.rect)
-        # Visualize the enemy's mask bounding rectangle
-        pygame.draw.rect(screen, (0, 255, 0), self.rect, 2)  # Green for the enemy's hitbox
 
-        if not self.is_dead:
+        if not self.is_dead:   
             # Draw the health bar
             # Red background (full health bar)
             pygame.draw.rect(screen, (255, 0, 0), (self.rect.x, self.rect.y - 10, self.rect.width, 5))

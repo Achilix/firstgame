@@ -44,8 +44,8 @@ SKY = pygame.transform.scale(SKY, (SCREEN_WIDTH + SIDE_MARGIN, SCREEN_HEIGHT + L
 #store titles
 img_list = []
 for x in range(TITLE_TYPES):
-    img = pygame.image.load(f'assets/{x}.png')
-    img = pygame.transform.scale(img, (TILE_SIZE, TILE_SIZE))
+    img = pygame.image.load(f'assets/{x}.png').convert_alpha()
+    img = pygame.transform.scale(img, (TILE_SIZE, TILE_SIZE))  # Scale all images to TILE_SIZE
     img_list.append(img)
 
 save_img = pygame.image.load('assets/save_btn.png').convert_alpha()

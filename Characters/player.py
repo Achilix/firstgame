@@ -24,7 +24,7 @@ class Player:
         self.rect = self.image.get_rect(topleft=(x, y))
 
         # Create a mask for precise collision detection
-        self.mask = pygame.mask.from_surface(self.image)
+        self.mask = pygame.mask.from_surface(self.image)  # Create a mask from the player's current image
 
         self.speed = 5
         self.velocity_y = 0
@@ -38,8 +38,9 @@ class Player:
         self.is_firing = False
         self.is_dead = False
         self.death_animation_done = False
-        self.bullets = []
-        self.bullet_count = 10
+        self.bullets = []  # List to store bullets
+        self.bullet_cooldown = 0  # Cooldown timer for firing bullets
+        self.ammo_count = 20  # Start with 20 bullets
 
     def load_frames(self, sprite_sheet, num_frames):
         frames = []
@@ -68,7 +69,7 @@ class Player:
             self.current_frame += self.animation_speed
             if self.current_frame >= len(self.frames_fire):
                 self.current_frame = 0
-                self.is_firing = False
+                self.is_firing = False  # Reset firing state after animation finishes
             self.image = self.frames_fire[int(self.current_frame)]
         elif self.is_moving:
             self.current_frame += self.animation_speed
@@ -141,42 +142,52 @@ class Player:
         if self.is_dead:
             return
         self.health -= amount
-        print(f"Player took {amount} damage! Health: {self.health}")  # Debugging print
         if self.health <= 0:
             self.health = 0
             self.is_dead = True
-            print("Player is dead!")  # Debugging print
 
     def shoot(self):
-        if self.bullet_count > 0:
-            if self.current_frame == 0:
-                direction = -1 if self.flipped else 1
-                bullet_x = self.rect.centerx + (direction * 20)
-                bullet_y = self.rect.top + 91
-                self.bullets.append(Bullet(bullet_x, bullet_y, direction))
-                self.is_firing = True
-                self.bullet_count -= 1
-                print(f"Bullets left: {self.bullet_count}")
-        else:
-            print("Out of bullets!")
+        if self.bullet_cooldown == 0 and self.ammo_count > 0:  # Only shoot if cooldown is 0 and ammo is available
+            direction = -1 if self.flipped else 1  # Determine the direction of the bullet
+
+            # Calculate the bullet's starting position based on the shooting animation
+            if self.flipped:
+                bullet_x = self.rect.right - 83  # Adjust for flipped orientation
+            else:
+                bullet_x = self.rect.left + 83  # Normal orientation
+
+            bullet_y = self.rect.top + 90  # Vertical position relative to the animation
+
+            # Create and add the bullet
+            self.bullets.append(Bullet(bullet_x, bullet_y, direction))
+            self.bullet_cooldown = 20  # Set cooldown (adjust this value for firing rate)
+            self.ammo_count -= 1  # Decrease ammo count
+
+            # Trigger the firing animation
+            self.is_firing = True
+            self.current_frame = 0  # Reset the animation frame
 
     def reload(self, amount):
-        self.bullet_count += amount
-        print(f"Reloaded! Bullets now: {self.bullet_count}")
+        self.bullet_cooldown = max(self.bullet_cooldown - amount, 0)
+        print(f"Reloaded! Cooldown now: {self.bullet_cooldown}")
 
     def update(self):
         if not self.is_dead:
-            self.animate()
-            self.update_bullets()
+            self.animate()  # Update the animation state
+            self.update_bullets()  # Update bullets
         else:
-            if self.animate():
+            if self.animate():  # Play death animation
                 print("Player death animation complete!")
 
     def update_bullets(self):
-        for bullet in self.bullets[:]:
+        for bullet in self.bullets[:]:  # Iterate over a copy of the list
             bullet.update()
-            if bullet.rect.right < 0 or bullet.rect.left > self.screen_width:
-                self.bullets.remove(bullet)
+            if bullet.rect.right < 0 or bullet.rect.left > self.screen_width or bullet.rect.top > 640:
+                self.bullets.remove(bullet)  # Remove bullets that go off-screen
+
+        # Decrease the cooldown timer
+        if self.bullet_cooldown > 0:
+            self.bullet_cooldown -= 1
 
     def draw(self, screen):
         # Draw the player
@@ -185,12 +196,6 @@ class Player:
         # Draw bullets
         for bullet in self.bullets:
             bullet.draw(screen)
-
-        # Draw the health bar
-        self.draw_health_bar(screen)
-
-        # Draw the ammo count
-        self.draw_ammo_count(screen)
 
     def draw_health_bar(self, screen):
         """
@@ -214,6 +219,6 @@ class Player:
         Draw the player's ammo count on the screen.
         """
         font = pygame.font.Font(None, 36)  # Use a default font with size 36
-        ammo_text = f"Ammo: {self.bullet_count}"
+        ammo_text = f"Ammo: {self.ammo_count}"
         text_surface = font.render(ammo_text, True, (255, 255, 255))  # White text
         screen.blit(text_surface, (10, 10))  # Display the ammo count at the top-left corner

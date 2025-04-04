@@ -6,7 +6,7 @@ from Characters.Enemy import Enemy
 from Ammo import Ammo
 from Bandage import Bandage
 from blocks import Block
-
+from Door import Door
 # Initialize Pygame
 pygame.init()
 
@@ -89,6 +89,42 @@ def draw_level(world_data):
                 screen.blit(tile_images[tile], (tile_x, tile_y))
 
 
+def pause_menu():
+    paused = True
+    font = pygame.font.Font(None, 50)  # Default font with size 50
+
+    while paused:
+        screen.fill(BLACK)  # Fill the screen with black for the pause menu
+
+        # Render the pause menu text
+        pause_text = font.render("Paused", True, WHITE)
+        resume_text = font.render("Press R to Resume", True, WHITE)
+        quit_text = font.render("Press Q to Quit", True, WHITE)
+
+        # Center the text on the screen
+        pause_rect = pause_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 50))
+        resume_rect = resume_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
+        quit_rect = quit_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 50))
+
+        # Draw the text
+        screen.blit(pause_text, pause_rect)
+        screen.blit(resume_text, resume_rect)
+        screen.blit(quit_text, quit_rect)
+
+        pygame.display.flip()  # Update the display
+
+        # Handle events
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                exit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_r:  # Resume the game
+                    paused = False
+                if event.key == pygame.K_q:  # Quit the game
+                    pygame.quit()
+                    exit()
+
 
 # Main game loop
 def main(level_file):
@@ -108,6 +144,7 @@ def main(level_file):
     ammo_items = []
     bandages = []
     blocks = pygame.sprite.Group()
+    door = None  # Initialize the door object
 
     # Parse the level data
     for y, row in enumerate(world_data):
@@ -119,9 +156,11 @@ def main(level_file):
             elif tile == 13:  # Enemy start position
                 enemies.append(Enemy(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE, None))
             elif tile == 10:  # Ammo
-                ammo_items.append(Ammo(x * TILE_SIZE, y * TILE_SIZE, "assets/10.png"))
+                ammo_items.append(Ammo(x * TILE_SIZE, y * TILE_SIZE, "assets/10.png", TILE_SIZE))
             elif tile == 11:  # Bandage
-                bandages.append(Bandage(x * TILE_SIZE, y * TILE_SIZE, "assets/11.png"))
+                bandages.append(Bandage(x * TILE_SIZE, y * TILE_SIZE, "assets/11.png", TILE_SIZE))
+            elif tile == 14:  # Door (finish line)
+                door = Door(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, "assets/14.png")
 
     # Create the player object
     player = Player(x=player_start_x, y=player_start_y, player_sprite=None, screen_width=SCREEN_WIDTH)
@@ -135,6 +174,9 @@ def main(level_file):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_p:  # Pause the game
+                    pause_menu()
 
         # Get key presses
         keys = pygame.key.get_pressed()
@@ -164,6 +206,17 @@ def main(level_file):
         player.handle_input(keys, mouse_buttons)
         player.apply_gravity(blocks)  # Pass blocks (platforms) to apply_gravity
         player.update()
+
+        # Update bullets
+        player.update_bullets()
+
+        # Check for collisions between bullets and enemies
+        for bullet in player.bullets[:]:  # Iterate over a copy of the bullet list
+            for enemy in enemies[:]:  # Iterate over a copy of the enemy list
+                if bullet.check_collision(enemy.mask, enemy.rect):  # Check for collision
+                    enemy.take_damage(20)  # Deal 20 damage to the enemy
+                    player.bullets.remove(bullet)  # Remove the bullet
+                    break  # Exit the loop to avoid modifying the list during iteration
 
         # Allow the player to move freely near the edges
          # Prevent the player from going off the right edge
@@ -198,14 +251,6 @@ def main(level_file):
             enemy.move_toward_player(player, blocks)  # Pass blocks for collision detection
             enemy.animate()  # Animate the enemy
 
-        # Check for collisions between bullets and enemies
-        for bullet in player.bullets[:]:  # Iterate over a copy of the list to safely remove bullets
-            for enemy in enemies:
-                if bullet.check_collision(enemy.mask, enemy.rect):
-                    enemy.take_damage(20)  # Deal damage to the enemy
-                    player.bullets.remove(bullet)  # Remove the bullet
-                    break  # Exit the loop to avoid modifying the list during iteration
-
         # Check for collisions between bullets and blocks
         for bullet in player.bullets[:]:  # Iterate over a copy of the list to safely remove bullets
             for block in blocks:
@@ -214,16 +259,28 @@ def main(level_file):
                     break  # Exit the loop to avoid modifying the list during iteration
 
         # Check for collisions with ammo
-        for ammo in ammo_items[:]:
+        for ammo in ammo_items[:]:  # Iterate over a copy of the list to safely remove ammo
             ammo.check_collision(player)
             if ammo.collected:
-                ammo_items.remove(ammo)
+                print("Ammo collected!")  # Debugging print
+                ammo_items.remove(ammo)  # Remove the ammo after it is collected
 
         # Check for collisions with bandages
         for bandage in bandages[:]:  # Iterate over a copy of the list to safely remove bandages
             bandage.check_collision(player)
             if bandage.collected:
                 bandages.remove(bandage)  # Remove the bandage after it is collected
+
+        # Check if the player reaches the door
+        if door and door.check_collision(player.mask, player.rect):
+            # Calculate the score as the percentage of zombies killed
+            total_zombies = len(enemies) + len([enemy for enemy in enemies if enemy.is_dead])
+            zombies_killed = len([enemy for enemy in enemies if enemy.is_dead])
+            score = (zombies_killed / total_zombies) * 100 if total_zombies > 0 else 0
+
+            # Display the score and end the level
+            print(f"Level Complete! Score: {score:.2f}%")
+            running = False  # Exit the game loop
 
         # Draw the repeated background
         for x in range(0, level_width, background_width):
@@ -234,9 +291,9 @@ def main(level_file):
         for block in blocks:
             screen.blit(block.image, (block.rect.x - scroll, block.rect.y))
 
-        # Draw enemies
+        # Draw enemies and their health bars
         for enemy in enemies:
-            screen.blit(enemy.image, (enemy.rect.x - scroll, enemy.rect.y))
+            enemy.draw(screen)
 
         # Draw ammo
         for ammo in ammo_items:
@@ -246,8 +303,24 @@ def main(level_file):
         for bandage in bandages:
             screen.blit(bandage.image, (bandage.rect.x - scroll, bandage.rect.y))
 
+        # Draw the door
+        if door:
+            door.draw(screen, scroll)
+
+        # Draw bullets
+        for bullet in player.bullets:
+            bullet.draw(screen)
+            bullet_x, bullet_y = bullet.rect.x, bullet.rect.y
+            print(f"Bullet created at ({bullet_x}, {bullet_y})")
+
         # Draw the player
         screen.blit(player.image, (player.rect.x, player.rect.y))  # Player stays fixed
+
+        # Draw the player's ammo count
+        player.draw_ammo_count(screen)
+
+        # Draw the player's health bar
+        player.draw_health_bar(screen)
 
         # Update the display
         pygame.display.flip()
