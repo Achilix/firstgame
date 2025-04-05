@@ -52,9 +52,6 @@ background = pygame.transform.scale(background, (SCREEN_WIDTH + 300, SCREEN_HEIG
 background_width = background.get_width()
 background_height = background.get_height()
 
-scroll = 0  # Horizontal scroll offset
-scroll_speed = 10  # Speed of scrolling
-
 SCROLL_MULTIPLIER = 1.5  # Adjust this value to control the scroll speed
 
 # Load level data from CSV
@@ -84,7 +81,7 @@ def draw_level(world_data):
     for y, row in enumerate(world_data):
         for x, tile in enumerate(row):
             if 0 <= tile < len(tile_images):  # Ensure the tile index is valid
-                tile_x = x * TILE_SIZE - scroll  # Adjust for scrolling
+                tile_x = x * TILE_SIZE  # Adjust for scrolling
                 tile_y = y * TILE_SIZE
                 screen.blit(tile_images[tile], (tile_x, tile_y))
 
@@ -126,18 +123,41 @@ def pause_menu():
                     exit()
 
 
+# Ensure the camera system allows movement across the entire level width
+class Camera:
+    def __init__(self, width, height, level_width):
+        self.offset_x = 0
+        self.offset_y = 0
+        self.width = width
+        self.height = height
+        self.level_width = level_width
+
+    def update(self, target_rect):
+        # Center the camera on the target, constrained within level bounds
+        self.offset_x = max(0, min(target_rect.centerx - self.width // 2, self.level_width - self.width))
+        self.offset_y = 0  # Keep the vertical offset fixed for a side-scrolling game
+
+    def apply(self, rect):
+        return rect.move(-self.offset_x, -self.offset_y)
+
+
+# Refine the draw_background function to ensure seamless background coverage to the right
+def draw_background(camera, level_width):
+    for x in range(0, max(level_width, SCREEN_WIDTH) + background_width, background_width):
+        for y in range(0, SCREEN_HEIGHT + background_height, background_height):
+            screen.blit(background, camera.apply(pygame.Rect(x, y, background_width, background_height)))
+
+
 # Main game loop
 def main(level_file):
-    global scroll  # Declare scroll as global to use the global variable
     world_data = load_level(level_file)
     if not world_data:
         return
 
     # Calculate the level's width and height based on the tile map
-    level_width = len(world_data[0]) * TILE_SIZE
+    level_width = len(world_data[0]) * TILE_SIZE if world_data else SCREEN_WIDTH  # Total width of the level based on tiles
     level_height = len(world_data) * TILE_SIZE
 
-    
     # Initialize objects
     player_start_x, player_start_y = 100, 500  # Default position
     enemies = []
@@ -166,6 +186,9 @@ def main(level_file):
     player = Player(x=player_start_x, y=player_start_y, player_sprite=None, screen_width=SCREEN_WIDTH)
     player.speed = 2  # Set the player's speed to a slower value
 
+    # Initialize the camera
+    camera = Camera(SCREEN_WIDTH, SCREEN_HEIGHT, level_width)
+
     running = True
     while running:
         screen.fill(GREEN)  # Clear the screen
@@ -182,25 +205,17 @@ def main(level_file):
         keys = pygame.key.get_pressed()
         mouse_buttons = pygame.mouse.get_pressed()
 
-        # Update player movement and scrolling
+        # Update player movement
         if keys[pygame.K_LEFT]:
-            # Scroll the level to the left
-            if scroll > 0:  # Ensure we don't scroll past the left edge
-                scroll -= player.speed * SCROLL_MULTIPLIER  # Increase scroll speed
-            # Move the player if they are not at the left edge of the screen
             if player.rect.left > 0:
                 player.rect.x -= player.speed
 
         if keys[pygame.K_RIGHT]:
-            # Scroll the level to the right
-            if scroll < level_width - SCREEN_WIDTH:  # Ensure we don't scroll past the right edge
-                scroll += player.speed * SCROLL_MULTIPLIER  # Increase scroll speed
-            # Move the player if they are not at the right edge of the screen
-            if player.rect.right < SCREEN_WIDTH:
+            if player.rect.right < level_width:
                 player.rect.x += player.speed
 
-        # Clamp the scroll value
-        scroll = max(0, min(scroll, level_width - SCREEN_WIDTH))
+        # Update the camera to follow the player
+        camera.update(player.rect)
 
         # Update player
         player.handle_input(keys, mouse_buttons)
@@ -217,13 +232,6 @@ def main(level_file):
                     enemy.take_damage(20)  # Deal 20 damage to the enemy
                     player.bullets.remove(bullet)  # Remove the bullet
                     break  # Exit the loop to avoid modifying the list during iteration
-
-        # Allow the player to move freely near the edges
-         # Prevent the player from going off the right edge
-
-        # Update the camera to follow the player
-
-        # Debugging print for player and camera positions
 
         # Check for collisions with blocks
         for block in blocks:
@@ -283,38 +291,26 @@ def main(level_file):
             running = False  # Exit the game loop
 
         # Draw the repeated background
-        for x in range(0, level_width, background_width):
-            for y in range(0, level_height, background_height):
-                screen.blit(background, (x - scroll, y))
+        draw_background(camera, level_width)
 
-        # Draw blocks
+        # Replace scroll-based rendering with camera-based rendering
         for block in blocks:
-            screen.blit(block.image, (block.rect.x - scroll, block.rect.y))
+            screen.blit(block.image, camera.apply(block.rect))
 
-        # Draw enemies and their health bars
         for enemy in enemies:
-            enemy.draw(screen)
+            enemy.draw(screen, camera)
 
-        # Draw ammo
-        for ammo in ammo_items:
-            screen.blit(ammo.image, (ammo.rect.x - scroll, ammo.rect.y))
-
-        # Draw bandages
-        for bandage in bandages:
-            screen.blit(bandage.image, (bandage.rect.x - scroll, bandage.rect.y))
-
-        # Draw the door
         if door:
-            door.draw(screen, scroll)
+            door.draw(screen, camera)
 
-        # Draw bullets
-        for bullet in player.bullets:
-            bullet.draw(screen)
-            bullet_x, bullet_y = bullet.rect.x, bullet.rect.y
-            print(f"Bullet created at ({bullet_x}, {bullet_y})")
+        for ammo in ammo_items:
+            screen.blit(ammo.image, camera.apply(ammo.rect))
 
-        # Draw the player
-        screen.blit(player.image, (player.rect.x, player.rect.y))  # Player stays fixed
+        for bandage in bandages:
+            screen.blit(bandage.image, camera.apply(bandage.rect))
+
+        # Draw the player using the camera
+        screen.blit(player.image, camera.apply(player.rect))
 
         # Draw the player's ammo count
         player.draw_ammo_count(screen)

@@ -134,15 +134,17 @@ class Enemy:
             self.is_dead = True
             print("Enemy is dead!")  # Debugging print
 
-    def draw(self, screen):
+    def draw(self, screen, camera):
         """
-        Draw the enemy and its health bar.
+        Draw the enemy and its health bar using the camera offset.
         """
-        screen.blit(self.image, self.rect)
+        screen.blit(self.image, camera.apply(self.rect))
 
         if not self.is_dead:   
             # Draw the health bar
             # Red background (full health bar)
-            pygame.draw.rect(screen, (255, 0, 0), (self.rect.x, self.rect.y - 10, self.rect.width, 5))
+            health_bar_rect = pygame.Rect(self.rect.x, self.rect.y - 10, self.rect.width, 5)
+            screen.blit(pygame.Surface((health_bar_rect.width, health_bar_rect.height)), camera.apply(health_bar_rect))
             # Green foreground (current health)
-            pygame.draw.rect(screen, (0, 255, 0), (self.rect.x, self.rect.y - 10, self.rect.width * (self.health / 100), 5))
+            current_health_rect = pygame.Rect(self.rect.x, self.rect.y - 10, self.rect.width * (self.health / 100), 5)
+            screen.blit(pygame.Surface((current_health_rect.width, current_health_rect.height)), camera.apply(current_health_rect))
