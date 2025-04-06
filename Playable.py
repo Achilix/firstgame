@@ -96,7 +96,7 @@ def pause_menu():
         # Render the pause menu text
         pause_text = font.render("Paused", True, WHITE)
         resume_text = font.render("Press R to Resume", True, WHITE)
-        quit_text = font.render("Press Q to Quit", True, WHITE)
+        quit_text = font.render("Press Q to Return to Menu", True, WHITE)
 
         # Center the text on the screen
         pause_rect = pause_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 50))
@@ -118,9 +118,56 @@ def pause_menu():
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_r:  # Resume the game
                     paused = False
-                if event.key == pygame.K_q:  # Quit the game
-                    pygame.quit()
-                    exit()
+                if event.key == pygame.K_q:  # Return to the level menu
+                    return "menu"
+
+
+def death_menu(score):
+    """
+    Display a menu when the player dies, showing the score and options to restart or quit.
+    :param score: The player's score to display.
+    """
+    print("Entering death menu...")  # Debugging print
+    font = pygame.font.Font(None, 50)  # Default font with size 50
+    menu_running = True
+
+    while menu_running:
+        screen.fill(BLACK)  # Fill the screen with black for the death menu
+
+        # Render the death menu text
+        death_text = font.render("Game Over", True, WHITE)
+        score_text = font.render(f"Score: {score:.2f}%", True, WHITE)
+        restart_text = font.render("Press R to Restart", True, WHITE)
+        quit_text = font.render("Press Q to Quit to Menu", True, WHITE)
+
+        # Center the text on the screen
+        death_rect = death_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 100))
+        score_rect = score_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 50))
+        restart_rect = restart_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
+        quit_rect = quit_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 50))
+
+        # Draw the text
+        screen.blit(death_text, death_rect)
+        screen.blit(score_text, score_rect)
+        screen.blit(restart_text, restart_rect)
+        screen.blit(quit_text, quit_rect)
+
+        pygame.display.flip()  # Update the display
+        print("Death menu displayed.")  # Debugging print
+
+        # Handle events
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                print("Exiting game from death menu.")  # Debugging print
+                pygame.quit()
+                exit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_r:  # Restart the level
+                    print("Restarting level...")  # Debugging print
+                    return "restart"
+                if event.key == pygame.K_q:  # Quit to menu
+                    print("Quitting to menu...")  # Debugging print
+                    return "menu"
 
 
 # Ensure the camera system allows movement across the entire level width
@@ -215,8 +262,10 @@ def main(level_file):
             if event.type == pygame.QUIT:
                 running = False
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_p:  # Pause the game
-                    pause_menu()
+                if event.key == pygame.K_p or event.key == pygame.K_ESCAPE:  # Pause the game with 'P' or 'ESC'
+                    action = pause_menu()
+                    if action == "menu":  # Return to the level menu
+                        return
 
         # Get key presses
         keys = pygame.key.get_pressed()
@@ -273,7 +322,7 @@ def main(level_file):
                 enemies.remove(enemy)  # Remove the enemy after the death animation is complete
                 continue  # Skip further processing for this enemy
 
-            enemy.move_toward_player(player, blocks)  # Pass blocks for collision detection
+            enemy.move_toward_player(player, blocks)  # Pass blocks for collision detection and ground check
             enemy.animate()  # Animate the enemy
 
         # Calculate the score as the percentage of zombies killed
@@ -305,6 +354,75 @@ def main(level_file):
             # Display the score and end the level
             print(f"Level Complete! Score: {score:.2f}%")
             running = False  # Exit the game loop
+
+        # Check if the player is killed
+        if player.health <= 0:
+            print("Game Over! The player has been killed.")
+            if not player.death_animation_done:  # Check if the death animation is complete
+                player.play_death_animation()  # Trigger the death animation
+                player.animate()  # Update the animation frame
+
+                # Redraw the current game state without clearing the screen
+                draw_background(camera, level_width)
+                for block in blocks:
+                    screen.blit(block.image, camera.apply(block.rect))
+                for enemy in enemies:
+                    enemy.draw(screen, camera)
+                if door:
+                    door.draw(screen, camera)
+                for ammo in ammo_items:
+                    screen.blit(ammo.image, camera.apply(ammo.rect))
+                for bandage in bandages:
+                    screen.blit(bandage.image, camera.apply(bandage.rect))
+                screen.blit(player.image, camera.apply(player.rect))  # Draw the player
+                player.draw_ammo_count(screen)
+                player.draw_health_bar(screen)
+                player.draw_score(screen, score, position=(10, 50))
+                draw_zombie_score(screen, score, position=(SCREEN_WIDTH - 175, 10))
+
+                pygame.display.flip()  # Update the display
+                clock.tick(60)  # Cap the frame rate
+                continue  # Wait for the next frame
+
+            # Add an additional second of wait after the animation
+            for _ in range(60):  # Wait for 1 second (60 frames at 60 FPS)
+                draw_background(camera, level_width)
+                for block in blocks:
+                    screen.blit(block.image, camera.apply(block.rect))
+                for enemy in enemies:
+                    enemy.draw(screen, camera)
+                if door:
+                    door.draw(screen, camera)
+                for ammo in ammo_items:
+                    screen.blit(ammo.image, camera.apply(ammo.rect))
+                for bandage in bandages:
+                    screen.blit(bandage.image, camera.apply(bandage.rect))
+                screen.blit(player.image, camera.apply(player.rect))  # Draw the player
+                player.draw_ammo_count(screen)
+                player.draw_health_bar(screen)
+                player.draw_score(screen, score, position=(10, 50))
+                draw_zombie_score(screen, score, position=(SCREEN_WIDTH - 175, 10))
+
+                pygame.display.flip()  # Update the display
+                clock.tick(60)  # Cap the frame rate
+
+            # Show the death menu after the animation and delay
+            action = death_menu(score)
+            if action == "restart":
+                main(level_file)  # Restart the level
+                return  # Exit the current game loop
+            elif action == "menu":
+                return  # Exit to the menu
+
+        # Check if the player falls off the map
+        if player.rect.top > SCREEN_HEIGHT:
+            print("Game Over! The player has fallen off the map.")
+            action = death_menu(score)  # Show the death menu
+            if action == "restart":
+                main(level_file)  # Restart the level
+                return  # Exit the current game loop
+            elif action == "menu":
+                return  # Exit to the menu
 
         # Draw the repeated background
         draw_background(camera, level_width)
@@ -347,7 +465,6 @@ def main(level_file):
         clock.tick(60)
 
     pygame.quit()
-
 
 if __name__ == "__main__":
     main("level0_data.csv")

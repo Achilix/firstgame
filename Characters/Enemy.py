@@ -27,6 +27,9 @@ class Enemy:
         # Create a mask for precise collision detection
         self.mask = pygame.mask.from_surface(self.image)
 
+        self.velocity_y = 0  # Vertical velocity for gravity
+        self.gravity = 0.5  # Gravity strength
+
     def load_frames(self, sprite_sheet, num_frames):
         """
         Split the sprite sheet into individual frames and scale them to 1.5 times their size.
@@ -76,25 +79,46 @@ class Enemy:
         self.mask = pygame.mask.from_surface(self.image)
         self.rect = self.image.get_rect(center=self.rect.center)  # Keep the enemy's position consistent
 
+    def apply_gravity(self, blocks):
+        """
+        Apply gravity to the enemy and ensure it falls when there is no block beneath it.
+        Prevent teleportation to the top of blocks when on the edge.
+        :param blocks: A list or group of block objects.
+        """
+        self.velocity_y += self.gravity  # Increase velocity due to gravity
+        self.rect.y += self.velocity_y  # Move the enemy vertically
+
+        # Check for collisions with blocks
+        for block in blocks:
+            if self.rect.colliderect(block.rect):
+                if self.velocity_y > 0:  # Falling down
+                    # Ensure the enemy is above the block before stopping the fall
+                    if self.rect.bottom - self.velocity_y <= block.rect.top:
+                        self.rect.bottom = block.rect.top  # Stop at the top of the block
+                        self.velocity_y = 0  # Reset vertical velocity
+
     def move_toward_player(self, player, blocks):
         """
         Move the enemy horizontally toward the player if the player is within line of sight.
-        Otherwise, patrol between two points.
+        Allow the enemy to fall into holes.
         :param player: The player object.
         :param blocks: A list or group of block objects.
         """
         if not self.is_dead:  # Only move if the enemy is alive
+            # Apply gravity before moving
+            self.apply_gravity(blocks)
+
             # Check if the player is within line of sight
             player_in_sight = abs(self.rect.x - player.rect.x) < 300 and abs(self.rect.y - player.rect.y) < 50
 
             if player_in_sight:
                 # Move toward the player
                 if self.rect.x < player.rect.x:
-                    self.rect.x += self.speed  # Move right
                     self.flipped = False  # Face right
+                    self.rect.x += self.speed  # Move right
                 elif self.rect.x > player.rect.x:
-                    self.rect.x -= self.speed  # Move left
                     self.flipped = True  # Face left
+                    self.rect.x -= self.speed  # Move left
             else:
                 # Patrol behavior: Move right to left
                 if not hasattr(self, "patrol_direction"):

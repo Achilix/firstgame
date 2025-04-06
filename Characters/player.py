@@ -18,6 +18,8 @@ class Player:
 
         self.current_frame = 0
         self.animation_speed = 0.2
+        self.death_animation_speed = 0.05  # Slower speed for death animation
+        self.death_animation_timer = 0  # Timer to control frame updates
         self.image = self.frames_idle[self.current_frame]
 
         # Main rect for rendering and collision
@@ -38,6 +40,7 @@ class Player:
         self.is_firing = False
         self.is_dead = False
         self.death_animation_done = False
+        self.death_animation_frame = 0
         self.bullets = []  # List to store bullets
         self.bullet_cooldown = 0  # Cooldown timer for firing bullets
         self.ammo_count = 20  # Start with 20 bullets
@@ -58,7 +61,7 @@ class Player:
     def animate(self):
         if self.is_dead:
             if not self.death_animation_done:
-                self.current_frame += self.animation_speed
+                self.current_frame += self.death_animation_speed  # Use slower speed for death animation
                 if self.current_frame >= len(self.frames_dead):
                     self.current_frame = len(self.frames_dead) - 1
                     self.death_animation_done = True
@@ -89,6 +92,21 @@ class Player:
         self.mask = pygame.mask.from_surface(self.image)
 
         return False
+
+    def play_death_animation(self):
+        """
+        Play the player's death animation frame by frame.
+        """
+        if not self.death_animation_done:
+            self.death_animation_timer += self.death_animation_speed
+            if self.death_animation_timer >= 1:  # Update frame only when timer reaches 1
+                self.death_animation_timer = 0  # Reset the timer
+                self.death_animation_frame += 1  # Move to the next frame
+
+            if self.death_animation_frame < len(self.frames_dead):
+                self.image = self.frames_dead[self.death_animation_frame]
+            else:
+                self.death_animation_done = True  # Mark animation as complete
 
     def handle_input(self, keys, mouse_buttons):
         self.handle_movement(keys)
@@ -122,16 +140,23 @@ class Player:
         self.animate()
 
     def apply_gravity(self, platforms):
-        self.velocity_y += self.gravity
-        self.rect.y += self.velocity_y
+        """
+        Apply gravity to the player and ensure it falls when there is no platform beneath it.
+        Prevent teleportation to the top of platforms when on the edge.
+        :param platforms: A list or group of platform objects.
+        """
+        self.velocity_y += self.gravity  # Increase velocity due to gravity
+        self.rect.y += self.velocity_y  # Move the player vertically
 
+        # Check for collisions with platforms
         for platform in platforms:
-            # Check for mask-based collision
             if platform.check_collision(self.mask, self.rect):
                 if self.velocity_y > 0:  # Falling down
-                    self.rect.bottom = platform.rect.top
-                    self.velocity_y = 0
-                    self.jumping = False
+                    # Ensure the player is above the platform before stopping the fall
+                    if self.rect.bottom - self.velocity_y <= platform.rect.top:
+                        self.rect.bottom = platform.rect.top  # Stop at the top of the platform
+                        self.velocity_y = 0  # Reset vertical velocity
+                        self.jumping = False  # Reset jumping state
 
     def take_damage(self, amount, enemy_rect=None):
         """
