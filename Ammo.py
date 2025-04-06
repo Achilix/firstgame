@@ -1,5 +1,11 @@
 import pygame
 
+# Initialize the mixer for sound effects
+pygame.mixer.init()
+
+# Load the reload sound
+reload_sound = pygame.mixer.Sound("assets/reload.mp3")
+
 class Ammo:
     def __init__(self, x, y, image_path, tile_size):
         self.image = pygame.image.load(image_path).convert_alpha()
@@ -24,3 +30,4 @@ class Ammo:
                 player.ammo_count += 10  # Increase the player's ammo count by 10
                 if player.ammo_count > 20:  # Cap the ammo count at 20
                     player.ammo_count = 20
+                reload_sound.play()  # Play the reload sound

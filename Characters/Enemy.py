@@ -82,7 +82,6 @@ class Enemy:
     def apply_gravity(self, blocks):
         """
         Apply gravity to the enemy and ensure it falls when there is no block beneath it.
-        Prevent teleportation to the top of blocks when on the edge.
         :param blocks: A list or group of block objects.
         """
         self.velocity_y += self.gravity  # Increase velocity due to gravity
@@ -92,10 +91,8 @@ class Enemy:
         for block in blocks:
             if self.rect.colliderect(block.rect):
                 if self.velocity_y > 0:  # Falling down
-                    # Ensure the enemy is above the block before stopping the fall
-                    if self.rect.bottom - self.velocity_y <= block.rect.top:
-                        self.rect.bottom = block.rect.top  # Stop at the top of the block
-                        self.velocity_y = 0  # Reset vertical velocity
+                    self.rect.bottom = block.rect.top  # Stop at the top of the block
+                    self.velocity_y = 0  # Reset vertical velocity
 
     def move_toward_player(self, player, blocks):
         """
