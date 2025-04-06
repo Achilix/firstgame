@@ -191,13 +191,15 @@ class Enemy:
         """
         Draw the enemy and its health bar using the camera offset.
         """
+        # Draw the enemy sprite
         screen.blit(self.image, camera.apply(self.rect))
 
-        if not self.is_dead:   
+        if not self.is_dead:
             # Draw the health bar
             # Red background (full health bar)
-            health_bar_rect = pygame.Rect(self.rect.x, self.rect.y - 10, self.rect.width, 5)
-            screen.blit(pygame.Surface((health_bar_rect.width, health_bar_rect.height)), camera.apply(health_bar_rect))
+            health_bar_bg_rect = pygame.Rect(self.rect.x, self.rect.y - 10, self.rect.width, 5)
+            pygame.draw.rect(screen, (255, 0, 0), camera.apply(health_bar_bg_rect))  # Red background
+
             # Green foreground (current health)
-            current_health_rect = pygame.Rect(self.rect.x, self.rect.y - 10, self.rect.width * (self.health / 100), 5)
-            screen.blit(pygame.Surface((current_health_rect.width, current_health_rect.height)), camera.apply(current_health_rect))
+            health_bar_fg_rect = pygame.Rect(self.rect.x, self.rect.y - 10, self.rect.width * (self.health / 100), 5)
+            pygame.draw.rect(screen, (0, 255, 0), camera.apply(health_bar_fg_rect))  # Green foreground
