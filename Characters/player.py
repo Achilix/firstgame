@@ -197,14 +197,15 @@ class Player:
         for bullet in self.bullets:
             bullet.draw(screen)
 
-    def draw_health_bar(self, screen):
+    def draw_health_bar(self, screen, position=(10, 10)):
         """
-        Draw the player's health bar above their character.
+        Draw the player's health bar at the specified position.
+        :param screen: The Pygame screen to draw on.
+        :param position: Tuple (x, y) for the top-left corner of the health bar.
         """
         bar_width = 100  # Width of the health bar
         bar_height = 10  # Height of the health bar
-        bar_x = self.rect.centerx - bar_width // 2  # Center the bar above the player
-        bar_y = self.rect.top - 20  # Position the bar slightly above the player
+        bar_x, bar_y = position
 
         # Calculate the health ratio
         health_ratio = self.health / 100
@@ -214,11 +215,25 @@ class Player:
         # Draw the foreground of the health bar (green)
         pygame.draw.rect(screen, (0, 255, 0), (bar_x, bar_y, bar_width * health_ratio, bar_height))
 
-    def draw_ammo_count(self, screen):
+    def draw_ammo_count(self, screen, position=(10, 30)):
         """
-        Draw the player's ammo count on the screen.
+        Draw the player's ammo count at the specified position.
+        :param screen: The Pygame screen to draw on.
+        :param position: Tuple (x, y) for the top-left corner of the ammo count.
         """
-        font = pygame.font.Font(None, 36)  # Use a default font with size 36
+        font = pygame.font.Font(None, 24)  # Use a default font with size 24
         ammo_text = f"Ammo: {self.ammo_count}"
         text_surface = font.render(ammo_text, True, (255, 255, 255))  # White text
-        screen.blit(text_surface, (10, 10))  # Display the ammo count at the top-left corner
+        screen.blit(text_surface, position)
+
+    def draw_score(self, screen, score, position=(10, 50)):
+        """
+        Draw the player's score at the specified position.
+        :param screen: The Pygame screen to draw on.
+        :param score: The player's current score.
+        :param position: Tuple (x, y) for the top-left corner of the score display.
+        """
+        font = pygame.font.Font(None, 24)  # Use a default font with size 24
+        score_text = f"Score: {score}"
+        text_surface = font.render(score_text, True, (255, 255, 255))  # White text
+        screen.blit(text_surface, position)

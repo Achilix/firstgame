@@ -148,6 +148,19 @@ def draw_background(camera, level_width):
             screen.blit(background, camera.apply(pygame.Rect(x, y, background_width, background_height)))
 
 
+def draw_zombie_score(screen, score, position=(10, 10)):
+    """
+    Draw the percentage of zombies killed on the screen.
+    :param screen: The Pygame screen to draw on.
+    :param score: The percentage of zombies killed.
+    :param position: Tuple (x, y) for the top-left corner of the score display.
+    """
+    font = pygame.font.Font(None, 24)  # Use a default font with size 24
+    score_text = f"Zombies Killed: {score:.2f}%"
+    text_surface = font.render(score_text, True, (255, 255, 255))  # White text
+    screen.blit(text_surface, position)
+
+
 # Main game loop
 def main(level_file):
     world_data = load_level(level_file)
@@ -165,6 +178,7 @@ def main(level_file):
     bandages = []
     blocks = pygame.sprite.Group()
     door = None  # Initialize the door object
+    total_zombies = 0  # Count the total number of zombies in the level
 
     # Parse the level data
     for y, row in enumerate(world_data):
@@ -175,6 +189,7 @@ def main(level_file):
                 player_start_x, player_start_y = x * TILE_SIZE, y * TILE_SIZE
             elif tile == 13:  # Enemy start position
                 enemies.append(Enemy(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE, None))
+                total_zombies += 1  # Increment the total zombie count
             elif tile == 10:  # Ammo
                 ammo_items.append(Ammo(x * TILE_SIZE, y * TILE_SIZE, "assets/10.png", TILE_SIZE))
             elif tile == 11:  # Bandage
@@ -190,6 +205,8 @@ def main(level_file):
     camera = Camera(SCREEN_WIDTH, SCREEN_HEIGHT, level_width)
 
     running = True
+    score = 0  # Initialize the score
+
     while running:
         screen.fill(GREEN)  # Clear the screen
 
@@ -259,6 +276,10 @@ def main(level_file):
             enemy.move_toward_player(player, blocks)  # Pass blocks for collision detection
             enemy.animate()  # Animate the enemy
 
+        # Calculate the score as the percentage of zombies killed
+        zombies_killed = total_zombies - len(enemies)  # Zombies killed = total zombies - remaining zombies
+        score = (zombies_killed / total_zombies) * 100 if total_zombies > 0 else 0
+
         # Check for collisions between bullets and blocks
         for bullet in player.bullets[:]:  # Iterate over a copy of the list to safely remove bullets
             for block in blocks:
@@ -281,11 +302,6 @@ def main(level_file):
 
         # Check if the player reaches the door
         if door and door.check_collision(player.mask, player.rect):
-            # Calculate the score as the percentage of zombies killed
-            total_zombies = len(enemies) + len([enemy for enemy in enemies if enemy.is_dead])
-            zombies_killed = len([enemy for enemy in enemies if enemy.is_dead])
-            score = (zombies_killed / total_zombies) * 100 if total_zombies > 0 else 0
-
             # Display the score and end the level
             print(f"Level Complete! Score: {score:.2f}%")
             running = False  # Exit the game loop
@@ -317,6 +333,12 @@ def main(level_file):
 
         # Draw the player's health bar
         player.draw_health_bar(screen)
+
+        # Draw the player's score in the top-left corner
+        player.draw_score(screen, score, position=(10, 50))
+
+        # Draw the zombie kill score
+        draw_zombie_score(screen, score, position=(SCREEN_WIDTH - 175, 10))
 
         # Update the display
         pygame.display.flip()
