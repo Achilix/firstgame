@@ -2,8 +2,18 @@ import pygame
 import random
 from Bullet import Bullet
 
+# Initialize the mixer for sound effects
+pygame.mixer.init()
+
 class Player:
+    # Class-level attributes for sound effects
+    shooting_sound = None
+
     def __init__(self, x, y, player_sprite, screen_width):
+        # Initialize sounds if not already initialized
+        if Player.shooting_sound is None:
+            Player.shooting_sound = pygame.mixer.Sound("assets/shooting.mp3")
+
         # Load sprite sheets
         self.sprite_sheet_run = pygame.image.load('SPRITES/PLAYER/Run.png').convert_alpha()
         self.sprite_sheet_idle = pygame.image.load('SPRITES/PLAYER/Idle.png').convert_alpha()
@@ -187,6 +197,9 @@ class Player:
             self.bullets.append(Bullet(bullet_x, bullet_y, direction))
             self.bullet_cooldown = 20  # Set cooldown (adjust this value for firing rate)
             self.ammo_count -= 1  # Decrease ammo count
+
+            # Play the shooting sound
+            Player.shooting_sound.play()
 
             # Trigger the firing animation
             self.is_firing = True

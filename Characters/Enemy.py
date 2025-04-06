@@ -1,5 +1,11 @@
 import pygame  # Import pygame
 
+# Initialize the mixer for sound effects
+pygame.mixer.init()
+
+# Load the zombie sound
+zombie_sound = pygame.mixer.Sound("assets/zombie.mp3")
+
 class Enemy:
     def __init__(self, x, y, width, height, enemy_sprite):
         # Load the walk animation sprite sheet
@@ -29,6 +35,8 @@ class Enemy:
 
         self.velocity_y = 0  # Vertical velocity for gravity
         self.gravity = 0.5  # Gravity strength
+
+        self.sound_timer = 0  # Timer to track sound playback
 
     def load_frames(self, sprite_sheet, num_frames):
         """
@@ -78,6 +86,29 @@ class Enemy:
         # Update the mask and rect whenever the image changes
         self.mask = pygame.mask.from_surface(self.image)
         self.rect = self.image.get_rect(center=self.rect.center)  # Keep the enemy's position consistent
+
+    def play_sound(self):
+        """
+        Play the zombie sound every 5 seconds if the zombie is visible.
+        """
+        if self.sound_timer <= 0:
+            zombie_sound.play()
+            self.sound_timer = 300  # Reset the timer (5 seconds at 60 FPS)
+
+    def update(self, camera):
+        """
+        Update the zombie's state, including animations and sound playback.
+        :param camera: The camera object to check visibility.
+        """
+        # Check if the zombie is visible on the screen
+        if camera.apply(self.rect).colliderect(pygame.Rect(0, 0, camera.width, camera.height)):
+            self.play_sound()
+
+        # Decrease the sound timer
+        if self.sound_timer > 0:
+            self.sound_timer -= 1
+
+        self.animate()
 
     def apply_gravity(self, blocks):
         """
@@ -153,6 +184,7 @@ class Enemy:
         if self.health <= 0:
             self.health = 0
             self.is_dead = True
+            zombie_sound.play()  # Play the zombie sound when it dies
             print("Enemy is dead!")  # Debugging print
 
     def draw(self, screen, camera):
