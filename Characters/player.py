@@ -129,16 +129,14 @@ class Player:
 
         if keys[pygame.K_LEFT]:
             self.rect.x -= self.speed
-            if self.rect.left < 0:
-                self.rect.left = 0
+            # Removed restriction for moving past the left edge
             if not self.flipped:
                 self.flipped = True
             self.is_moving = True
 
         if keys[pygame.K_RIGHT]:
             self.rect.x += self.speed
-            if self.rect.right > self.screen_width:
-                self.rect.right = self.screen_width
+            # Removed restriction for moving past the right edge
             if self.flipped:
                 self.flipped = False
             self.is_moving = True
