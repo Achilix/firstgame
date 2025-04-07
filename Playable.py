@@ -351,9 +351,16 @@ def main(level_file):
 
         # Check if the player reaches the door
         if door and door.check_collision(player.mask, player.rect):
-            # Display the score and end the level
+            # Display the score and handle the level end
             print(f"Level Complete! Score: {score:.2f}%")
-            running = False  # Exit the game loop
+            next_level = "level1_data.csv"  # Replace with the actual next level file
+            action = door.handle_level_end(screen, score, next_level=next_level if os.path.exists(f"LVLS/{next_level}") else None)
+
+            if action == "next":
+                main(next_level)  # Load the next level
+                return
+            elif action == "menu":
+                return  # Exit to the level menu
 
         # Check if the player is killed
         if player.health <= 0:

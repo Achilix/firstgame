@@ -57,7 +57,9 @@ def level_menu(screen, font):
         # Draw level buttons
         for button, level in level_buttons:
             if button.draw(screen):
-                Playable.main(level)  # Pass the selected level to Playable
+                level_path = os.path.join("LVLS", level)  # Get the full path to the level file
+                print(f"Attempting to load level file: {level_path}")  # Debugging print
+                Playable.main(level_path)  # Pass the full path to Playable
                 running = False  # Exit the level menu after starting the level
 
         # Draw the "Back" button

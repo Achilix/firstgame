@@ -150,7 +150,7 @@ class Enemy:
             else:
                 # Patrol behavior: Move right to left
                 if not hasattr(self, "patrol_direction"):
-                    self.patrol_direction = 1  # 1 for right, -1 for left
+                    self.patrol_direction = 5  # 1 for right, -1 for left
                     self.patrol_start_x = self.rect.x  # Save the starting position
                     self.patrol_range = 100  # Patrol range in pixels
 

@@ -2,7 +2,8 @@ import pygame
 import os
 import subprocess  # To run the Level Builder script
 from button import Button
-import Playable  # Import Playable to load levels
+import Playable 
+from level_menu import level_menu # Import Playable to load levels
 
 # Initialize pygame
 pygame.init()
@@ -112,7 +113,7 @@ def start_menu():
 
         # Draw buttons
         if start_button.draw(screen):
-            level_menu()  # Go to the level selection menu
+            level_menu(screen, font)  # Go to the level selection menu
         if lvlbuilder_button.draw(screen):
             run_lvlbuilder()  # Launch the Level Builder
         if quit_button.draw(screen):
@@ -137,7 +138,7 @@ def run_lvlbuilder():
         print("Error: Level Builder script not found.")
 
 # Level selection menu
-def level_menu():
+def level_menu(screen, font):
     running = True
 
     # Dynamically load level files from the LVLS directory
