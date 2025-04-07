@@ -1,18 +1,13 @@
 import pygame
-import random
 from Bullet import Bullet
 
 # Initialize the mixer for sound effects
 pygame.mixer.init()
 
 class Player:
-    # Class-level attributes for sound effects
-    shooting_sound = None
 
     def __init__(self, x, y, player_sprite, screen_width):
-        # Initialize sounds if not already initialized
-        if Player.shooting_sound is None:
-            Player.shooting_sound = pygame.mixer.Sound("assets/shooting.mp3")
+        Player.shooting_sound = pygame.mixer.Sound("assets/shooting.mp3")
 
         # Load sprite sheets
         self.sprite_sheet_run = pygame.image.load('SPRITES/PLAYER/Run.png').convert_alpha()
@@ -29,7 +24,7 @@ class Player:
         self.current_frame = 0
         self.animation_speed = 0.2
         self.death_animation_speed = 0.05  # Slower speed for death animation
-        self.death_animation_timer = 0  # Timer to control frame updates
+        self.death_animation_timer = 1  # Timer to control frame updates
         self.image = self.frames_idle[self.current_frame]
 
         # Main rect for rendering and collision
@@ -218,8 +213,6 @@ class Player:
     def update_bullets(self):
         for bullet in self.bullets[:]:  # Iterate over a copy of the list
             bullet.update()
-            if bullet.rect.right < 0 or bullet.rect.left > self.screen_width or bullet.rect.top > 640:
-                self.bullets.remove(bullet)  # Remove bullets that go off-screen
 
         # Decrease the cooldown timer
         if self.bullet_cooldown > 0:
