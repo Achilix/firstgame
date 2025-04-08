@@ -73,6 +73,7 @@ class Door:
                     exit()
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_n and next_level:  # Load the next level
+                        print(f"Next level requested: {next_level}")  # Debugging message
                         return "next"
                     if event.key == pygame.K_m:  # Return to the level menu
                         return "menu"

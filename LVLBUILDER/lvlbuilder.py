@@ -21,7 +21,7 @@ scroll = 0
 scroll_speed = 1
 TITLE_TYPES = 15  # Updated to match the available images
 current_tile = 0
-level = 0
+level = 1
 font = pygame.font.SysFont('Futura', 30)
 #define colours
 GREEN = (144, 201, 120)

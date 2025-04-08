@@ -26,41 +26,55 @@ def create_button_centered(y_offset, text, font, button_width=300, button_height
     return Button(x, y, button_width, button_height, text, font, (200, 200, 200), (100, 100, 100), BLACK)
 
 def level_menu(screen, font):
-    """
-    Display the level selection menu.
-    :param screen: The Pygame screen to draw on.
-    :param font: Font object for rendering text.
-    """
     running = True
+
+    # Load a background image
+    background = pygame.image.load(r"assets\single_background.png").convert()
+    background = pygame.transform.scale(background, (SCREEN_WIDTH, SCREEN_HEIGHT))
+
+    # Load the PressStart2P font
+    press_start_font_path = r"PressStart2P.ttf"  # Update the path if needed
+    title_font = pygame.font.Font(press_start_font_path, 40)  # Smaller size for this font
+    button_font = pygame.font.Font(press_start_font_path, 20)  # Smaller size for buttons
 
     # Dynamically load level files from the LVLS directory
     levels = [f for f in os.listdir("LVLS") if f.endswith("_data.csv")]
-    level_buttons = []
 
-    # Create centered buttons for each level
+    # Create centered buttons for each level, stacked horizontally
+    level_buttons = []
+    button_width = 300
+    button_height = 60
+    padding = 20  # Space between buttons
+    max_buttons_per_row = SCREEN_WIDTH // (button_width + padding)  # Calculate max buttons per row
+
     for i, level in enumerate(levels):
-        y_offset = 150 + i * 70  # Space out buttons vertically
-        button = create_button_centered(y_offset, level.replace("_data.csv", ""), font)
+        row = i // max_buttons_per_row  # Determine the row
+        col = i % max_buttons_per_row  # Determine the column
+        x_offset = (col * (button_width + padding)) + (SCREEN_WIDTH - (max_buttons_per_row * (button_width + padding))) // 2
+        y_offset = 150 + row * (button_height + padding)  # Space out rows vertically
+        button = Button(x_offset, y_offset, button_width, button_height, level.replace("_data.csv", ""), button_font, (200, 200, 200), (100, 100, 100), BLACK)
         level_buttons.append((button, level))
 
     # Create a "Back" button
-    back_button = create_button_centered(SCREEN_HEIGHT - 100, "Back", font)
+    back_button = create_button_centered(SCREEN_HEIGHT - 100, "Back", button_font)
 
     while running:
-        screen.fill(WHITE)
+        screen.blit(background, (0, 0))  # Draw the background image
 
         # Render menu title
-        text = font.render("Select a Level", True, BLACK)
+        text = title_font.render("Select a Level", True, (255, 215, 0))  # Gold color
         text_rect = text.get_rect(center=(SCREEN_WIDTH // 2, 50))  # Center the title
         screen.blit(text, text_rect)
 
         # Draw level buttons
         for button, level in level_buttons:
             if button.draw(screen):
-                level_path = os.path.join("LVLS", level)  # Get the full path to the level file
-                print(f"Attempting to load level file: {level_path}")  # Debugging print
-                Playable.main(level_path)  # Pass the full path to Playable
-                running = False  # Exit the level menu after starting the level
+                level_path = os.path.join("LVLS", level)
+                print(f"Button clicked for level: {level}")  # Debugging message
+                print(f"Resolved level path: {level_path}")  # Debugging message
+                Playable.main(level)
+                running = False
+                break  
 
         # Draw the "Back" button
         if back_button.draw(screen):

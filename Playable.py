@@ -353,7 +353,13 @@ def main(level_file):
         if door and door.check_collision(player.mask, player.rect):
             # Display the score and handle the level end
             print(f"Level Complete! Score: {score:.2f}%")
-            next_level = "level1_data.csv"  # Replace with the actual next level file
+            
+            # Dynamically determine the next level
+            current_level_index = int(level_file.replace("level", "").replace("_data.csv", ""))
+            next_level = f"level{current_level_index + 1}_data.csv"  # Increment to the next level
+            
+            print(f"Next level determined: {next_level}")  # Debugging message
+            
             action = door.handle_level_end(screen, score, next_level=next_level if os.path.exists(f"LVLS/{next_level}") else None)
 
             if action == "next":
