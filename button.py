@@ -13,8 +13,6 @@ class Button:
     def draw(self, surface):
         action = False
         pos = pygame.mouse.get_pos()
-
-        # Change color on hover
         if self.rect.collidepoint(pos):
             pygame.draw.rect(surface, self.hover_color, self.rect)
             if pygame.mouse.get_pressed()[0] == 1 and not self.clicked:
@@ -22,13 +20,9 @@ class Button:
                 action = True
         else:
             pygame.draw.rect(surface, self.color, self.rect)
-
         if pygame.mouse.get_pressed()[0] == 0:
             self.clicked = False
-
-        # Draw the text
         text_surface = self.font.render(self.text, True, self.text_color)
         text_rect = text_surface.get_rect(center=self.rect.center)
         surface.blit(text_surface, text_rect)
-
         return action
